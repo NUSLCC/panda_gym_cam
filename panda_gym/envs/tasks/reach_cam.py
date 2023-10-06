@@ -7,7 +7,7 @@ import numpy as np
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
-from panda_gym.utils import calculate_coverage_ratio
+from panda_gym.utils import calculate_coverage_ratio_nparray
 
 
 class ReachCam(Task):
@@ -61,7 +61,7 @@ class ReachCam(Task):
         return np.array(d < self.image_overlap_threshold, dtype=bool)
 
     def compute_reward(self, camera_viewarea, object_viewarea, info: Dict[str, Any]) -> np.ndarray:
-        c = calculate_coverage_ratio(camera_viewarea, object_viewarea)
+        c = calculate_coverage_ratio_nparray(camera_viewarea, object_viewarea)
         if self.reward_type == "sparse":
             return -np.array(c > self.image_overlap_threshold, dtype=np.float32)
         else:
