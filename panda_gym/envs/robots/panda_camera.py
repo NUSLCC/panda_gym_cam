@@ -110,16 +110,7 @@ class PandaWithCamera(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
-        # end-effector position and velocity
-        ee_position = np.array(self.get_ee_position())
-        ee_velocity = np.array(self.get_ee_velocity())
-        # fingers opening
-        if not self.block_gripper:
-            fingers_width = self.get_fingers_width()
-            observation = np.concatenate((ee_position, ee_velocity, [fingers_width]))
-        else:
-            observation = np.concatenate((ee_position, ee_velocity))
-        return observation
+        return self.sim.render_from_robot_cam(width=self.render_width, height=self.render_height)
 
     def reset(self) -> None:
         self.set_joint_neutral()
