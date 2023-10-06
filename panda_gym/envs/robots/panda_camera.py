@@ -37,7 +37,7 @@ class PandaWithCamera(PyBulletRobot):
         super().__init__(
             sim,
             body_name="panda_camera",
-            file_name="panda_modified.urdf",
+            file_name="URDF_files/panda_modified.urdf",
             base_position=base_position,
             action_space=action_space,
             joint_indices=np.array([0, 1, 2, 3, 4, 5, 6, 9, 10]),
