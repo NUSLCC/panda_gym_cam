@@ -225,10 +225,6 @@ class PyBullet:
             return self.rgb_img
 
 
-
-
-
-
     def get_base_position(self, body: str) -> np.ndarray:
         """Get the position of the body.
 
