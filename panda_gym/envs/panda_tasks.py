@@ -5,6 +5,7 @@ import numpy as np
 from panda_gym.envs.core import RobotTaskEnv
 from panda_gym.envs.robots.panda import Panda
 from panda_gym.envs.robots.panda_camera import PandaWithCamera
+from panda_gym.envs.core import RobotCamTaskEnv
 from panda_gym.envs.tasks.flip import Flip
 from panda_gym.envs.tasks.pick_and_place import PickAndPlace
 from panda_gym.envs.tasks.push import Push
@@ -216,7 +217,7 @@ class PandaReachEnv(RobotTaskEnv):
         )
 
 
-class PandaReachCamEnv(RobotTaskEnv):
+class PandaReachCamEnv(RobotCamTaskEnv):
     """Reach task wih Panda Cam robot.
 
     Args:
@@ -243,12 +244,12 @@ class PandaReachCamEnv(RobotTaskEnv):
         control_type: str = "joint",
         renderer: str = "Tiny",
         render_width: int = 720,
-        render_height: int = 480,
-        render_target_position: Optional[np.ndarray] = None,
-        render_distance: float = 1.4,
-        render_yaw: float = 45,
-        render_pitch: float = -30,
-        render_roll: float = 0,
+        render_height: int = 1280,
+        # render_target_position: Optional[np.ndarray] = None,
+        # render_distance: float = 1.4,
+        # render_yaw: float = 45,
+        # render_pitch: float = -30,
+        # render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
         robot = PandaWithCamera(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
@@ -258,11 +259,11 @@ class PandaReachCamEnv(RobotTaskEnv):
             task,
             render_width=render_width,
             render_height=render_height,
-            render_target_position=render_target_position,
-            render_distance=render_distance,
-            render_yaw=render_yaw,
-            render_pitch=render_pitch,
-            render_roll=render_roll,
+            # render_target_position=render_target_position,
+            # render_distance=render_distance,
+            # render_yaw=render_yaw,
+            # render_pitch=render_pitch,
+            # render_roll=render_roll,
         )
 
 
