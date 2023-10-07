@@ -36,8 +36,12 @@ class ReachCam(Task):
             position=np.array([0.0, 0.0, self.object_size / 2]),
             rgba_color=np.array([0.26, 0.13, 0.02, 1.0]), # dark brown color 
         )
-
-        # put the other camera here? Use body_name? Load URDF here 
+        self.sim.loadURDF( 
+            body_name="stationary_camera",
+            fileName="URDF_files/d405_cam_with_stand.urdf",
+            basePosition=[1.5, 0.0, 0.0],
+            useFixedBase=True,
+        )
 
     def get_obs(self) -> np.ndarray:
         return self.sim.render_from_stationary_cam(width=self.render_width, height=self.render_height)
