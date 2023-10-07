@@ -320,8 +320,7 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         """
         return self.sim.render_from_stationary_cam(
                 width=self.render_width,
-                height=self.render_height
-            )
+                height=self.render_height)
 
 class RobotTaskEnv(gym.Env):
     """Robotic task goal env, as the junction of a task and a robot.
