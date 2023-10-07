@@ -4,8 +4,7 @@ env = PandaReachCamEnv(render_mode="human") # rgb_array
 
 observation, info = env.reset()
 
-
-for _ in range(1000):
+for _ in range(500):
     action = env.action_space.sample() # random action
     observation, reward, terminated, truncated, info = env.step(action)
 
