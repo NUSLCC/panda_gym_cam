@@ -3,6 +3,7 @@ from typing import Any, Dict
 import numpy as np
 
 from panda_gym.envs.core import Task
+from panda_gym.utils import distance
 from panda_gym.utils import calculate_coverage_ratio_nparray
 
 
@@ -18,11 +19,12 @@ class ReachCam(Task):
         super().__init__(sim)
         self.reward_type = reward_type
         self.image_overlap_threshold = image_overlap_threshold
+        self.distance_threshold=0.05
         self.get_ee_position = get_ee_position
         self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
         self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
-        self.render_width: int = 480
-        self.render_height: int = 480
+        self.render_width: int = 80
+        self.render_height: int = 80
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -39,7 +41,7 @@ class ReachCam(Task):
         )
 
     def get_obs(self) -> np.ndarray:
-        return np.array([]) 
+        return np.zeros((self.render_width, self.render_height, 4))
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())
@@ -54,13 +56,19 @@ class ReachCam(Task):
         goal = np.random.uniform(self.goal_range_low, self.goal_range_high)
         return goal
 
-    def is_success(self, camera_viewarea: np.ndarray, object_viewarea: np.ndarray) -> np.ndarray:
-        c = calculate_coverage_ratio_nparray(camera_viewarea, object_viewarea)
-        return np.array(c < self.image_overlap_threshold, dtype=bool)
+    def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
+        d = distance(achieved_goal, desired_goal)
+        return np.array(d < self.distance_threshold, dtype=bool)
 
-    def compute_reward(self, camera_viewarea, object_viewarea, info: Dict[str, Any]) -> np.ndarray:
-        c = calculate_coverage_ratio_nparray(camera_viewarea, object_viewarea)
+    # def compute_reward(self, cam_img, obj_img, info: Dict[str, Any]) -> np.ndarray:
+    #     c = calculate_coverage_ratio_nparray(cam_img, obj_img)
+    #     if self.reward_type == "sparse":
+    #         return -np.array(c > self.image_overlap_threshold, dtype=np.float32)
+    #     else:
+    #         return -c.astype(np.float32)
+    def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        d = distance(achieved_goal, desired_goal)
         if self.reward_type == "sparse":
-            return -np.array(c > self.image_overlap_threshold, dtype=np.float32)
+            return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
-            return -c.astype(np.float32)
+            return -d.astype(np.float32)
