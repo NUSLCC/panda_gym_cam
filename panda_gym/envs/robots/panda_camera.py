@@ -1,11 +1,12 @@
 from typing import Optional
 
+import pybullet as p
 import numpy as np
 from gymnasium import spaces
 
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
-import os
+
 
 class PandaWithCamera(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
@@ -23,7 +24,7 @@ class PandaWithCamera(PyBulletRobot):
         sim: PyBullet,
         block_gripper: bool = False,
         base_position: Optional[np.ndarray] = None,
-        control_type: str = "ee",
+        control_type: str = "joints",
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
         self.block_gripper = block_gripper
@@ -31,9 +32,6 @@ class PandaWithCamera(PyBulletRobot):
         n_action = 3 if self.control_type == "ee" else 7  # control (x, y z) if "ee", else, control the 7 joints
         n_action += 0 if self.block_gripper else 1
         action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
-        # urdf_path = os.path.abspath('URDF_files')
-        # print(urdf_path)
-        # p.setAdditionalSearchPath(urdf_path)
         super().__init__(
             sim,
             body_name="panda_camera",
@@ -47,6 +45,7 @@ class PandaWithCamera(PyBulletRobot):
         self.fingers_indices = np.array([9, 10])
         self.neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
         self.ee_link = 11
+        self.cam_link = 12
         self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
         self.sim.set_lateral_friction(self.body_name, self.fingers_indices[1], lateral_friction=1.0)
         self.sim.set_spinning_friction(self.body_name, self.fingers_indices[0], spinning_friction=0.001)
@@ -110,7 +109,37 @@ class PandaWithCamera(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
-        return self.sim.render_from_robot_cam(width=self.render_width, height=self.render_height)
+        return self.render_from_robot_cam()
+
+    def render_from_robot_cam(
+        self,
+        cam_width: int = 80,
+        cam_height: int = 80,
+    ) -> Optional[np.ndarray]:
+        """
+        Camera fixed to the panda robot arm
+        """
+        cam_pos = self.sim.get_link_position("panda_camera", self.cam_link)
+        cam_orn = self.sim.get_link_orientation("panda_camera", self.cam_link)
+        cam_pos[2] = cam_pos[2] - 0.04
+        print(f'Camera pos: {cam_pos}')
+        print(f'Camera orn: {cam_orn}')
+        rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
+        forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
+        up_vec = rot_matrix.dot(np.array((0, 1, 0)))
+        target_position = cam_pos + 0.1 * forward_vec
+        view_matrix = self.sim.physics_client.computeViewMatrix(cam_pos, target_position, up_vec)
+        aspect_ratio = cam_width / cam_height
+        fov = 58
+        nearVal = 0.01
+        farVal = 100
+        proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+        rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
+        # depthImg = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        print(len(rgb_img))
+        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4) #[:, :, :3]
+        print(rgb_img.shape)
+        return rgb_img
 
     def reset(self) -> None:
         self.set_joint_neutral()
@@ -132,7 +161,7 @@ class PandaWithCamera(PyBulletRobot):
     def get_ee_velocity(self) -> np.ndarray:
         """Returns the velocity of the end-effector as (vx, vy, vz)"""
         return self.get_link_velocity(self.ee_link)
-    
-    def get_ee_orientation(self) -> np.ndarray:
-        """Returns the orientation of the end-effector as (x, y, z, w)"""
-        return self.get_link_orientation(self.ee_link)
+
+    def get_cam_position(self) -> np.ndarray:
+        """Returns the position of the end-effector as (x, y, z)"""
+        return self.get_link_position(self.cam_link)

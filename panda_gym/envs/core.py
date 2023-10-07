@@ -155,7 +155,6 @@ class PyBulletRobot(ABC):
         inverse_kinematics = self.sim.inverse_kinematics(self.body_name, link=link, position=position, orientation=orientation)
         return inverse_kinematics
 
-
 class Task(ABC):
     """Base class for tasks.
     Args:
@@ -215,13 +214,8 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         self,
         robot: PyBulletRobot,
         task: Task,
-        render_width: int = 1280,
-        render_height: int = 720,
-        render_target_position: Optional[np.ndarray] = None,
-        # render_distance: float = 1.4,
-        # render_yaw: float = 45,
-        # render_pitch: float = -30,
-        # render_roll: float = 0,
+        render_width: int = 480,
+        render_height: int = 480,
     ) -> None:
         assert robot.sim == task.sim, "The robot and the task must belong to the same simulation."
         self.sim = robot.sim
@@ -244,15 +238,17 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         self.compute_reward = self.task.compute_reward
         self._saved_goal = dict()  # For state saving and restoring
 
+        self.render_width = render_width
+        self.render_height = render_height
 
 
     def _get_obs(self) -> Dict[str, np.ndarray]:
         """
         Two separate observations: the first from the camera attached to the robot arm, the second from 
         the staionary camera that looks down on the robot arm """
-        robot_cam_obs = self.robot.get_obs().astype(np.unint8)  
-        stationary_cam_obs = self.task.get_obs().astype(np.unint8)
-        observation = np.concatenate([robot_cam_obs, stationary_cam_obs])
+        robot_obs = self.robot.get_obs().astype(np.uint8)  
+        task_obs = self.task.get_obs().astype(np.uint8)
+        observation = np.concatenate([robot_obs, task_obs])
         achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         return {
             "observation": observation,
@@ -326,7 +322,6 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
                 width=self.render_width,
                 height=self.render_height
             )
-
 
 class RobotTaskEnv(gym.Env):
     """Robotic task goal env, as the junction of a task and a robot.

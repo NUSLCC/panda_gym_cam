@@ -241,15 +241,10 @@ class PandaReachCamEnv(RobotCamTaskEnv):
         self,
         render_mode: str = "rgb_array",
         reward_type: str = "dense",
-        control_type: str = "joint",
+        control_type: str = "joints",
         renderer: str = "Tiny",
-        render_width: int = 720,
-        render_height: int = 1280,
-        # render_target_position: Optional[np.ndarray] = None,
-        # render_distance: float = 1.4,
-        # render_yaw: float = 45,
-        # render_pitch: float = -30,
-        # render_roll: float = 0,
+        render_width: int = 480,
+        render_height: int = 480,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
         robot = PandaWithCamera(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
@@ -258,12 +253,7 @@ class PandaReachCamEnv(RobotCamTaskEnv):
             robot,
             task,
             render_width=render_width,
-            render_height=render_height,
-            # render_target_position=render_target_position,
-            # render_distance=render_distance,
-            # render_yaw=render_yaw,
-            # render_pitch=render_pitch,
-            # render_roll=render_roll,
+            render_height=render_height
         )
 
 

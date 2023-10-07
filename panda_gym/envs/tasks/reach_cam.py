@@ -19,8 +19,8 @@ class ReachCam(Task):
         self.image_overlap_threshold = image_overlap_threshold
         self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
         self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
-        self.render_width: int = 720
-        self.render_height: int = 1280
+        self.render_width: int = 480
+        self.render_height: int = 480
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -37,7 +37,8 @@ class ReachCam(Task):
         )
 
     def get_obs(self) -> np.ndarray:
-        return self.sim.render_from_robot_cam(self.render_width, self.render_height)
+        print("get_obs_none")
+        return 
 
     def get_achieved_goal(self) -> np.ndarray:
         ## return achieved goal
