@@ -166,7 +166,7 @@ class PyBullet:
             
             camera_state = self.physics_client.getLinkState(self._bodies_idx["panda_camera"], 12)
             camera_pos = np.array(camera_state[0])
-            camera_pos[2] = camera_pos[2] - 0.04
+            camera_pos[2] = camera_pos[2] - 0.0185 # 16 mm is half of D405 cam thickness, but need to extend 18.5mm out to not see cam material itself
             camera_orn = np.array(camera_state[1])
            # print(f'Camera orn: {camera_orn}')
             rot_matrix = np.array(self.physics_client.getMatrixFromQuaternion(camera_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
@@ -199,18 +199,18 @@ class PyBullet:
         """
         if self.render_mode == "rgb_array":
             
-            camera_state = self.physics_client.getLinkState(self._bodies_idx["stationary_camera"], 3) # Edit this later
-            camera_pos = np.array(camera_state[0])
-            camera_pos[2] = camera_pos[2] - 0.04
-            camera_orn = np.array(camera_state[1])
+            camera_state2 = self.physics_client.getLinkState(self._bodies_idx["stationary_camera"], 1) 
+            camera_pos2 = np.array(camera_state2[0])
+            camera_pos2[2] = camera_pos2[2] - 0.0185 # 16 mm is half of D405 cam thickness, but need to extend 18.5mm out to not see cam material itself
+            camera_orn2 = np.array(camera_state2[1])
            # print(f'Camera orn: {camera_orn}')
-            rot_matrix = np.array(self.physics_client.getMatrixFromQuaternion(camera_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
-            forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
-            up_vec = rot_matrix.dot(np.array((0, 1, 0)))
+            rot_matrix2 = np.array(self.physics_client.getMatrixFromQuaternion(camera_orn2)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
+            forward_vec2 = rot_matrix2.dot(np.array((0, 0, -1)))
+            up_vec2 = rot_matrix2.dot(np.array((0, 1, 0)))
 
-            target_position = camera_pos + 0.1 * forward_vec
+            target_position2 = camera_pos2 + 0.1 * forward_vec2
 
-            view_matrix = self.physics_client.computeViewMatrix(camera_pos, target_position, up_vec)
+            view_matrix = self.physics_client.computeViewMatrix(camera_pos2, target_position2, up_vec2)
 
             aspect_ratio = self.width / self.height
             fov = 58
@@ -219,10 +219,10 @@ class PyBullet:
 
             proj_matrix = self.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
 
-            self.rgb_img = self.physics_client.getCameraImage(self.width, self.height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
-            self.rgb_img = np.array(self.rgb_img).reshape(self.height, self.width, 4)[:, :, :3]
+            self.rgb_img2 = self.physics_client.getCameraImage(self.width, self.height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
+            self.rgb_img2 = np.array(self.rgb_img).reshape(self.height, self.width, 4)[:, :, :3]
 
-            return self.rgb_img
+            return self.rgb_img2
 
 
 
