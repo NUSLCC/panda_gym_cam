@@ -9,6 +9,7 @@ from panda_gym.envs.core import Task
 from panda_gym.utils import distance
 from panda_gym.utils import calculate_coverage_ratio
 
+import math
 
 class ReachCam(Task):
     def __init__(
@@ -16,13 +17,22 @@ class ReachCam(Task):
         sim,
         reward_type="dense",
         image_overlap_threshold=0.80,
-        obj_xy_range=0.3, # CHANGE THIS LATER!!
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
         self.image_overlap_threshold = image_overlap_threshold
-        self.obj_range_low = np.array([-obj_xy_range / 2, -obj_xy_range / 2, 0])
-        self.obj_range_high = np.array([obj_xy_range / 2, obj_xy_range / 2, 0]) # np.random.uniform(obj_range_low and obj_range_high)
+        self.object_size = 0.02
+        self.dis_to_table = 0.2349 # z distance from the neutral_joint_values in panda-gym
+        self.horiz_total_dis = 2*self.dis_to_table*math.tan(math.radians(87)/2) 
+        self.vert_total_dis = 2*self.dis_to_table*math.tan(math.radians(58)/2)
+        self.initial_x_coord = 0.6734392995150833 # from the neutral pos of panda in panda-gym
+        self.initial_y_coord = -0.00016106371424058215
+        self.x_min = self.initial_x_coord - self.vert_total_dis/2
+        self.x_max = self.initial_x_coord + self.vert_total_dis/2
+        self.y_min = self.initial_y_coord - self.horiz_total_dis/2
+        self.y_max = self.initial_y_coord + self.horiz_total_dis/2
+        self.obj_range_low = np.array([self.x_min, self.y_min, 0])
+        self.obj_range_high = np.array([self.x_max, self.y_max, 0]) 
         with self.sim.no_rendering():
             self._create_scene()
 
