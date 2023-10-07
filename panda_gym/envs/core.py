@@ -322,10 +322,9 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         Returns:
             RGB np.ndarray or None: An RGB array if mode is 'rgb_array', else None.
         """
-            return self.sim.render_from_stationary_cam(
+        return self.sim.render_from_stationary_cam(
                 width=self.render_width,
-                height=self.render_height
-            )
+                height=self.render_height)
 
         
 
