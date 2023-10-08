@@ -13,18 +13,19 @@ class ReachCam(Task):
         sim,
         get_ee_position,
         reward_type="dense",
+        distance_threshold=0.05,
         image_overlap_threshold=0.80,
         goal_range=0.3,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
         self.image_overlap_threshold = image_overlap_threshold
-        self.distance_threshold=0.05
+        self.distance_threshold=distance_threshold
         self.get_ee_position = get_ee_position
         self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
         self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
-        self.render_width: int = 80
-        self.render_height: int = 80
+        self.cam_width: int = 320
+        self.cam_height: int = 180
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -41,7 +42,7 @@ class ReachCam(Task):
         )
 
     def get_obs(self) -> np.ndarray:
-        return np.zeros((self.render_width, self.render_height, 4))
+        return np.zeros((self.cam_width, self.cam_height, 3))
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

@@ -113,17 +113,15 @@ class PandaWithCamera(PyBulletRobot):
 
     def render_from_robot_cam(
         self,
-        cam_width: int = 80,
-        cam_height: int = 80,
+        cam_width: int = 320,
+        cam_height: int = 180,
     ) -> Optional[np.ndarray]:
         """
         Camera fixed to the panda robot arm
         """
         cam_pos = self.sim.get_link_position("panda_camera", self.cam_link)
         cam_orn = self.sim.get_link_orientation("panda_camera", self.cam_link)
-        cam_pos[2] = cam_pos[2] - 0.04
-        # print(f'Camera pos: {cam_pos}')
-        # print(f'Camera orn: {cam_orn}')
+        cam_pos[2] = cam_pos[2] - 0.0115 - 0.001 # 11.5 mm is half of D405 cam thickness, but need to minus off another 0.001 to avoid seeing edges of itself
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))
@@ -136,7 +134,7 @@ class PandaWithCamera(PyBulletRobot):
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
         # depthImg = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
-        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4) #[:, :, :3]
+        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
         return rgb_img
 
     def reset(self) -> None:

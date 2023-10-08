@@ -243,7 +243,7 @@ class PandaReachCamEnv(RobotCamTaskEnv):
         reward_type: str = "dense",
         control_type: str = "joints",
         renderer: str = "Tiny",
-        render_width: int = 480,
+        render_width: int = 720,
         render_height: int = 480,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)

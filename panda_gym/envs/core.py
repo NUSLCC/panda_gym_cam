@@ -214,7 +214,7 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         self,
         robot: PyBulletRobot,
         task: Task,
-        render_width: int = 480,
+        render_width: int = 720,
         render_height: int = 480,
     ) -> None:
         assert robot.sim == task.sim, "The robot and the task must belong to the same simulation."
