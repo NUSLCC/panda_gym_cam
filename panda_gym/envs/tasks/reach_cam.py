@@ -8,8 +8,7 @@ import numpy as np
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
 from panda_gym.utils import calculate_coverage_ratio
-
-import math
+from panda_gym.utils import calculate_object_range
 
 class ReachCam(Task):
     def __init__(
@@ -22,17 +21,7 @@ class ReachCam(Task):
         self.reward_type = reward_type
         self.image_overlap_threshold = image_overlap_threshold
         self.object_size = 0.02
-        self.dis_to_table = 0.2349 # z distance from the neutral_joint_values in panda-gym
-        self.horiz_total_dis = 2*self.dis_to_table*math.tan(math.radians(87)/2) 
-        self.vert_total_dis = 2*self.dis_to_table*math.tan(math.radians(58)/2)
-        self.initial_x_coord = 0.0734392995150833 # from the neutral pos of panda in panda-gym, assuming base_position is [-0.6,0,0].  self.initial_x_coord = 0.6734392995150833 + base_position[0]
-        self.initial_y_coord = -0.00016106371424058215
-        self.x_min = self.initial_x_coord - self.vert_total_dis/2
-        self.x_max = self.initial_x_coord + self.vert_total_dis/2
-        self.y_min = self.initial_y_coord - self.horiz_total_dis/2
-        self.y_max = self.initial_y_coord + self.horiz_total_dis/2
-        self.obj_range_low = np.array([self.x_min, self.y_min, 0])
-        self.obj_range_high = np.array([self.x_max, self.y_max, 0]) 
+        self.cam_link = 12
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -61,10 +50,12 @@ class ReachCam(Task):
         return coverage_ratio
 
     def reset(self) -> None:
-        object_position = self._sample_object()
+        self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
+        self.obj_range_low, self.obj_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
+        object_position = self._sample_goal()
         self.sim.set_base_pose("object", object_position, np.array([0.0, 0.0, 0.0, 1.0]))
 
-    def _sample_object(self) -> np.ndarray:
+    def _sample_goal(self) -> np.ndarray:
         """Randomize start position of object."""
         object_position = np.array([0.0, 0.0, self.object_size / 2])
         noise = self.np_random.uniform(self.obj_range_low, self.obj_range_high)
