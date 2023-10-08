@@ -25,7 +25,7 @@ class ReachCam(Task):
         self.dis_to_table = 0.2349 # z distance from the neutral_joint_values in panda-gym
         self.horiz_total_dis = 2*self.dis_to_table*math.tan(math.radians(87)/2) 
         self.vert_total_dis = 2*self.dis_to_table*math.tan(math.radians(58)/2)
-        self.initial_x_coord = 0.6734392995150833 # from the neutral pos of panda in panda-gym
+        self.initial_x_coord = 0.0734392995150833 # from the neutral pos of panda in panda-gym, assuming base_position is [-0.6,0,0].  self.initial_x_coord = 0.6734392995150833 + base_position[0]
         self.initial_y_coord = -0.00016106371424058215
         self.x_min = self.initial_x_coord - self.vert_total_dis/2
         self.x_max = self.initial_x_coord + self.vert_total_dis/2

@@ -8,7 +8,7 @@ p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 planeId = p.loadURDF('plane.urdf')
 camId = p.loadURDF('URDF_files/d405_cam_with_stand.urdf', [1.5,0,0], p.getQuaternionFromEuler([0,0,0]))
-pandaId = p.loadURDF('URDF_files/panda_modified.urdf',[0,0,0], p.getQuaternionFromEuler([0,0,0]))
+pandaId = p.loadURDF('URDF_files/panda_modified.urdf',[-0.6,0,0], p.getQuaternionFromEuler([0,0,0]))
 
 neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79]) # taken from panda gym
 for i in range(len(neutral_joint_values)):  
@@ -94,7 +94,9 @@ for i in range(10000):
     x_max = x_coord + vert_total_dis/2
     y_min = y_coord - horiz_total_dis/2
     y_max = y_coord + horiz_total_dis/2
-
+    
+    print(f"x coord is {x_coord}")
+    print(f"y coord is {y_coord}")
     print(f"x boundaries: {(x_min, x_max)}")
     print(f"y boundaries: {(y_min, y_max)}")
 
