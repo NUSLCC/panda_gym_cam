@@ -1,4 +1,5 @@
 from typing import Optional
+import math
 
 import pybullet as p
 import numpy as np
@@ -8,7 +9,7 @@ from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
 
-class PandaWithCamera(PyBulletRobot):
+class PandaCam(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
 
     Args:
@@ -133,7 +134,32 @@ class PandaWithCamera(PyBulletRobot):
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
-        # depthImg = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
+        return rgb_img
+
+    def render_from_stationary_cam(
+        self,
+        cam_width: int = 320,
+        cam_height: int = 180,
+    ) -> Optional[np.ndarray]:
+        """
+        Stationary camera that is directly in front of the robot arm
+        """
+        cam_pos = self.sim.get_link_position("panda_camera", 1)
+        cam_orn = self.sim.get_link_orientation("panda_camera", 1)
+        cam_pos[0] = cam_pos[0] - 0.0115*math.cos(math.pi/4) -0.001 # 11.5 mm is half of D405 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
+        cam_pos[2] = cam_pos[2] - 0.0115*math.sin(math.pi/4) - 0.001
+        rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
+        forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
+        up_vec = rot_matrix.dot(np.array((0, 1, 0)))
+        target_position = cam_pos + 0.1 * forward_vec
+        view_matrix = self.sim.physics_client.computeViewMatrix(cam_pos, target_position, up_vec)
+        aspect_ratio = cam_width / cam_height
+        fov = 58
+        nearVal = 0.01
+        farVal = 100
+        proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+        rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
         rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
         return rgb_img
 

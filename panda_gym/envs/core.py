@@ -192,8 +192,8 @@ class Task(ABC):
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
-class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
-    """Robotic task goal env, as the junction of a task and a robot, with D405 cameras.
+class RobotTaskEnv(gym.Env):
+    """Robotic task goal env, as the junction of a task and a robot.
 
     Args:
         robot (PyBulletRobot): The robot.
@@ -216,6 +216,11 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         task: Task,
         render_width: int = 720,
         render_height: int = 480,
+        render_target_position: Optional[np.ndarray] = None,
+        render_distance: float = 1.4,
+        render_yaw: float = 45,
+        render_pitch: float = -30,
+        render_roll: float = 0,
     ) -> None:
         assert robot.sim == task.sim, "The robot and the task must belong to the same simulation."
         self.sim = robot.sim
@@ -226,12 +231,12 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         observation, _ = self.reset()  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape
-        desired_goal_shape = observation["achieved_goal"].shape
+        desired_goal_shape = observation["desired_goal"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(-10.0, 10.0, shape=observation_shape, dtype=np.float32),
-                desired_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32),
-                achieved_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float32),
+                desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float32),
+                achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32),
             )
         )
         self.action_space = self.robot.action_space
@@ -240,14 +245,24 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
 
         self.render_width = render_width
         self.render_height = render_height
-
+        self.render_target_position = (
+            render_target_position if render_target_position is not None else np.array([0.0, 0.0, 0.0])
+        )
+        self.render_distance = render_distance
+        self.render_yaw = render_yaw
+        self.render_pitch = render_pitch
+        self.render_roll = render_roll
+        with self.sim.no_rendering():
+            self.sim.place_visualizer(
+                target_position=self.render_target_position,
+                distance=self.render_distance,
+                yaw=self.render_yaw,
+                pitch=self.render_pitch,
+            )
 
     def _get_obs(self) -> Dict[str, np.ndarray]:
-        """
-        Two separate observations: the first from the camera attached to the robot arm, the second from 
-        the staionary camera that looks down on the robot arm """
-        robot_obs = self.robot.get_obs().astype(np.uint8)  
-        task_obs = self.task.get_obs().astype(np.uint8)
+        robot_obs = self.robot.get_obs().astype(np.float32)  # robot state
+        task_obs = self.task.get_obs().astype(np.float32)  # object position, velococity, etc...
         observation = np.concatenate([robot_obs, task_obs])
         achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         return {
@@ -318,12 +333,19 @@ class RobotCamTaskEnv(gym.Env): # USE THIS INSTEAD OF ROBOT TASK ENV
         Returns:
             RGB np.ndarray or None: An RGB array if mode is 'rgb_array', else None.
         """
-        return self.sim.render_from_stationary_cam(
-                width=self.render_width,
-                height=self.render_height)
+        
+        return self.sim.render(
+            width=self.render_width,
+            height=self.render_height,
+            target_position=self.render_target_position,
+            distance=self.render_distance,
+            yaw=self.render_yaw,
+            pitch=self.render_pitch,
+            roll=self.render_roll,
+        )
 
-class RobotTaskEnv(gym.Env):
-    """Robotic task goal env, as the junction of a task and a robot.
+class RobotCamTaskEnv(gym.Env):
+    """Robotic task goal env, as the junction of a task and a robot, with D405 cameras.
 
     Args:
         robot (PyBulletRobot): The robot.
@@ -364,7 +386,7 @@ class RobotTaskEnv(gym.Env):
         desired_goal_shape = observation["desired_goal"].shape
         self.observation_space = spaces.Dict(
             dict(
-                observation=spaces.Box(-10.0, 10.0, shape=observation_shape, dtype=np.float32),
+                observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
                 desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float32),
                 achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32),
             )
