@@ -4,7 +4,7 @@ import numpy as np
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
-from panda_gym.utils import calculate_coverage_ratio_nparray
+from panda_gym.utils import calculate_object_range
 
 
 class ReachCam(Task):
@@ -26,6 +26,7 @@ class ReachCam(Task):
         self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
         self.cam_width: int = 320
         self.cam_height: int = 180
+        self.cam_link = 12
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -49,6 +50,8 @@ class ReachCam(Task):
         return ee_position
 
     def reset(self) -> None:
+        self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
+        self.obj_range_low, self.obj_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
 
@@ -61,12 +64,6 @@ class ReachCam(Task):
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=bool)
 
-    # def compute_reward(self, cam_img, obj_img, info: Dict[str, Any]) -> np.ndarray:
-    #     c = calculate_coverage_ratio_nparray(cam_img, obj_img)
-    #     if self.reward_type == "sparse":
-    #         return -np.array(c > self.image_overlap_threshold, dtype=np.float32)
-    #     else:
-    #         return -c.astype(np.float32)
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
         if self.reward_type == "sparse":

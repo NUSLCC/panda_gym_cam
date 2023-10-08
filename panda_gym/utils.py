@@ -1,5 +1,5 @@
 import numpy as np
-
+import math
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
@@ -86,3 +86,29 @@ def calculate_coverage_ratio_nparray(a: np.ndarray, b: np.ndarray) -> np.ndarray
     coverage_ratio = intersection_area / a_area
 
     return coverage_ratio
+
+def calculate_object_range(initial_x_coord, initial_y_coord, initial_z_coord):
+    """
+    Calculates the (x,y,z) array ranges where the object can be generated, such that it is inside robot-cam fov
+     
+    Args:
+        initial_x_coord (float): x coordinate of panda robot-cam in neutral pos
+        initial_y_coord (float): y coordinate of panda robot-cam in neutral pos
+        initial_z_coord (float): z coordinate of panda robot-cam in neutral pos  
+
+    Returns: 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+    """
+    horiz_total_dis = 2*initial_z_coord*math.tan(math.radians(87)/2) 
+    vert_total_dis = 2*initial_z_coord*math.tan(math.radians(58)/2)
+    x_min = initial_x_coord - vert_total_dis/2
+    x_max = initial_x_coord + vert_total_dis/2
+    y_min = initial_y_coord - horiz_total_dis/2
+    y_max = initial_y_coord + horiz_total_dis/2
+
+    # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated
+    obj_range_low = np.array([x_min, y_min, 0])
+    obj_range_high = np.array([x_max, y_max, 0]) 
+
+    return obj_range_low, obj_range_high
