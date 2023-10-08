@@ -26,8 +26,8 @@ class ReachCam(Task):
         self.get_ee_position = get_ee_position
         self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
         self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
-        self.cam_width: int = 320
-        self.cam_height: int = 180
+        self.cam_width: int = 160
+        self.cam_height: int = 90
         self.cam_link = 12
         self.staionary_cam_link = 1
         with self.sim.no_rendering():
@@ -56,8 +56,8 @@ class ReachCam(Task):
 
     def render_from_stationary_cam(
         self,
-        cam_width: int = 320,
-        cam_height: int = 180,
+        cam_width: int = 160,
+        cam_height: int = 90,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
