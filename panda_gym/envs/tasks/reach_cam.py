@@ -30,7 +30,7 @@ class ReachCam(Task):
         self.cam_width: int = 160
         self.cam_height: int = 90
         self.cam_link = 12
-        self.staionary_cam_link = 1
+        self.stationary_cam_link = 1
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -63,8 +63,8 @@ class ReachCam(Task):
         """
         Stationary camera that is directly in front of the robot arm
         """
-        cam_pos = self.sim.get_link_position("panda_camera", self.staionary_cam_link)
-        cam_orn = self.sim.get_link_orientation("panda_camera", self.staionary_cam_link)
+        cam_pos = self.sim.get_link_position("stationary_camera", self.stationary_cam_link)
+        cam_orn = self.sim.get_link_orientation("stationary_camera", self.stationary_cam_link)
         cam_pos[0] = cam_pos[0] - 0.0115*math.cos(math.pi/4) -0.001 # 11.5 mm is half of D405 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
         cam_pos[2] = cam_pos[2] - 0.0115*math.sin(math.pi/4) - 0.001
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
