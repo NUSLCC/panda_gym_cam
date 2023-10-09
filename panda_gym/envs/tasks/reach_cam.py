@@ -23,9 +23,10 @@ class ReachCam(Task):
         self.reward_type = reward_type
         self.image_overlap_threshold = image_overlap_threshold
         self.distance_threshold=distance_threshold
+        self.object_size = 0.04
         self.get_ee_position = get_ee_position
-        self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
-        self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
+        self.goal_range_low = None
+        self.goal_range_high = None
         self.cam_width: int = 160
         self.cam_height: int = 90
         self.cam_link = 12
@@ -38,10 +39,10 @@ class ReachCam(Task):
         self.sim.create_table(length=1.1, width=0.7, height=0.4, x_offset=-0.3)
         self.sim.create_sphere(
             body_name="target",
-            radius=0.02,
+            radius=self.object_size/2,
             mass=0.0,
             ghost=True,
-            position=np.zeros(3),
+            position=np.array([0.0, 0.0, self.object_size / 2]),
             rgba_color=np.array([0.1, 0.9, 0.1, 0.3]),
         )
         self.sim.loadURDF( 
@@ -92,7 +93,9 @@ class ReachCam(Task):
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
-        goal = np.random.uniform(self.goal_range_low, self.goal_range_high)
+        goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
+        noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
+        goal += noise
         return goal
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
