@@ -23,5 +23,5 @@ tmp_path = "./tmp/"+datetime.now().strftime('tqc_%H_%M_%d')
 new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
 model.set_logger(new_logger)
 
-model.learn(total_timesteps=50_000, progress_bar=True)
+model.learn(total_timesteps=20_000, progress_bar=True)
 model.save("tqc_her_panda")
