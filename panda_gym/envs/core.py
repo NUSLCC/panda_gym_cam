@@ -413,8 +413,8 @@ class RobotCamTaskEnv(gym.Env):
             )
 
     def _get_obs(self) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.float32)  # robot state
-        task_obs = self.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+        robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
+        task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         observation = np.concatenate([robot_obs, task_obs])
         achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         return {
