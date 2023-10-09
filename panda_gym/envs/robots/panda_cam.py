@@ -8,7 +8,6 @@ from gymnasium import spaces
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
-
 class PandaCam(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
 
@@ -46,7 +45,7 @@ class PandaCam(PyBulletRobot):
         self.fingers_indices = np.array([9, 10])
         self.neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
         self.ee_link = 11
-        self.cam_link = 12
+        self.cam_link = 13
         self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
         self.sim.set_lateral_friction(self.body_name, self.fingers_indices[1], lateral_friction=1.0)
         self.sim.set_spinning_friction(self.body_name, self.fingers_indices[0], spinning_friction=0.001)
@@ -122,7 +121,7 @@ class PandaCam(PyBulletRobot):
         """
         cam_pos = self.sim.get_link_position("panda_camera", self.cam_link)
         cam_orn = self.sim.get_link_orientation("panda_camera", self.cam_link)
-        cam_pos[2] = cam_pos[2] - 0.0115 - 0.001 # 11.5 mm is half of D405 cam thickness, but need to minus off another 0.001 to avoid seeing edges of itself
+        
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))
