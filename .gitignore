@@ -9,3 +9,4 @@ build/
 sandbox
 tmp/
 events.out.tfevents.*
+*zip
