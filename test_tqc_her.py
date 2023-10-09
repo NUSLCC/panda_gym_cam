@@ -16,10 +16,10 @@ model = TQC(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, lear
             top_quantiles_to_drop_per_net=2, 
             policy_kwargs=dict(net_arch=[512, 512, 512], n_critics=2, n_quantiles=25))
 
-tmp_path = "./tmp"
+tmp_path = "./tmp/TQC_NEW"
 # set up logger
 new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
 model.set_logger(new_logger)
 
-model.learn(total_timesteps=20_000, progress_bar=True)
+model.learn(total_timesteps=30_000, progress_bar=True)
 model.save("tqc_her_panda")
