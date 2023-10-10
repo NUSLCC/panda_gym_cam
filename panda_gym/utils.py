@@ -102,13 +102,23 @@ def calculate_object_range(initial_x_coord, initial_y_coord, initial_z_coord):
     """
     horiz_total_dis = 2*initial_z_coord*math.tan(math.radians(87)/2) 
     vert_total_dis = 2*initial_z_coord*math.tan(math.radians(58)/2)
+
     x_min = initial_x_coord - vert_total_dis/2
     x_max = initial_x_coord + vert_total_dis/2
     y_min = initial_y_coord - horiz_total_dis/2
     y_max = initial_y_coord + horiz_total_dis/2
 
+    # If object is above table, the fov must be scaled according to the height
+    z_max = initial_z_coord - 0.05
+    z_value = np.random.uniform(0, z_max)
+    ratio = (z_max - z_value)/z_max
+    x_min *= ratio
+    x_max *= ratio
+    y_min *= ratio
+    y_max *= ratio
+
     # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated
-    obj_range_low = np.array([x_min, y_min, 0])
-    obj_range_high = np.array([x_max, y_max, 0]) 
+    obj_range_low = np.array([x_min, y_min, z_value])
+    obj_range_high = np.array([x_max, y_max, z_value]) 
 
     return obj_range_low, obj_range_high
