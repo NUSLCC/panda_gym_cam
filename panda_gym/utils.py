@@ -127,7 +127,7 @@ def generate_object_range():
         obj_range_high (np.ndarray): coordinates of the maximum of obj range
     """
 
-    x_min = -0.6
+    x_min = -0.1
     x_max = 0.25
     y_min = -0.35
     y_max = 0.35
