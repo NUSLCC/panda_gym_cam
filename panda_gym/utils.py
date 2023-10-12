@@ -128,10 +128,10 @@ def generate_object_range(initial_x_coord, initial_y_coord, initial_z_coord):
     """
     horiz_total_dis = 2*initial_z_coord*math.tan(math.radians(87)/2) 
     vert_total_dis = 2*initial_z_coord*math.tan(math.radians(58)/2)
-    x_min = initial_x_coord - vert_total_dis/2 - 0.5
+    x_min = initial_x_coord - vert_total_dis/2 - 0.35
     x_max = initial_x_coord + vert_total_dis/2 + 0.2
-    y_min = initial_y_coord - horiz_total_dis/2 - 0.3
-    y_max = initial_y_coord + horiz_total_dis/2 + 0.3
+    y_min = initial_y_coord - horiz_total_dis/2 - 0.2
+    y_max = initial_y_coord + horiz_total_dis/2 + 0.2
 
     # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated
     obj_range_low = np.array([x_min, y_min, 0])

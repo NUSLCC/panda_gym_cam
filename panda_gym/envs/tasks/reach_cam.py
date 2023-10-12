@@ -6,7 +6,7 @@ import math
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
-from panda_gym.utils import calculate_object_range
+from panda_gym.utils import calculate_object_range, generate_object_range
 
 
 class ReachCam(Task):
@@ -87,7 +87,7 @@ class ReachCam(Task):
 
     def reset(self) -> None:
         self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
-        self.goal_range_low, self.goal_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
+        self.goal_range_low, self.goal_range_high = generate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
 
@@ -104,11 +104,11 @@ class ReachCam(Task):
 
     def is_terminated(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
-        return np.array(d < self.distance_threshold or self.distance_threshold > 1.0, dtype=bool)
+        return np.array(d < self.distance_threshold or d > 1.0, dtype=bool)
 
     def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
-        return np.array(self.distance_threshold > 1.0, dtype=bool)
+        return np.array(d > 1.0, dtype=bool)
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
