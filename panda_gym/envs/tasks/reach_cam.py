@@ -100,6 +100,10 @@ class ReachCam(Task):
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
+        return np.array(d < self.distance_threshold, dtype=bool)
+
+    def is_terminated(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
+        d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold or self.distance_threshold > 1.0, dtype=bool)
 
     def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
