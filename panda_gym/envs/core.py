@@ -189,6 +189,10 @@ class Task(ABC):
         """Returns whether the achieved goal match the desired goal."""
 
     @abstractmethod
+    def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
+        """Returns whether the achieved goal match the desired goal."""
+
+    @abstractmethod
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
@@ -432,7 +436,8 @@ class RobotCamTaskEnv(gym.Env):
             self.robot.reset()
             self.task.reset()
         observation = self._get_obs()
-        info = {"is_success": self.task.is_success(observation["achieved_goal"], self.task.get_goal())}
+        info = {"is_success": self.task.is_success(observation["achieved_goal"], self.task.get_goal()), 
+                "is_failure": self.task.is_failure(observation["achieved_goal"], self.task.get_goal())}
         return observation, info
 
     def save_state(self) -> int:
@@ -467,10 +472,11 @@ class RobotCamTaskEnv(gym.Env):
         self.robot.set_action(action)
         self.sim.step()
         observation = self._get_obs()
-        # An episode is terminated iff the agent has reached the target
+        # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_success(observation["achieved_goal"], self.task.get_goal()))
+        failed = bool(self.task.is_failure(observation["achieved_goal"], self.task.get_goal()))
         truncated = False
-        info = {"is_success": terminated}
+        info = {"is_terminated": terminated, "is_failure": failed}
         reward = float(self.task.compute_reward(observation["achieved_goal"], self.task.get_goal(), info))
         return observation, reward, terminated, truncated, info
 
