@@ -436,7 +436,7 @@ class RobotCamTaskEnv(gym.Env):
             self.robot.reset()
             self.task.reset()
         observation = self._get_obs()
-        info = {"is_success": self.task.is_success(observation["achieved_goal"], self.task.get_goal()), 
+        info = {"is_terminated": self.task.is_success(observation["achieved_goal"], self.task.get_goal()), 
                 "is_failure": self.task.is_failure(observation["achieved_goal"], self.task.get_goal())}
         return observation, info
 
