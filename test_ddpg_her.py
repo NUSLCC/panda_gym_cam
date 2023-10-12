@@ -13,10 +13,10 @@ model = DDPG(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, lea
             # Parameters for HER
             replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"))
 
-tmp_path = "./tmp/"+datetime.now().strftime('ddpg_her_modified_%H_%M_%d')
+tmp_path = "./tmp/"+datetime.now().strftime('ddpg_her_single_view_%H_%M_%d')
 # set up logger
 new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
 model.set_logger(new_logger)
 
-model.learn(total_timesteps=50_000, progress_bar=True)
+model.learn(total_timesteps=30_000, progress_bar=True)
 model.save("ddpg_her_panda")
