@@ -5,7 +5,7 @@ from datetime import datetime
 
 import gymnasium as gym
 
-env = gym.make('PandaReachCam-v3', render_mode="human") # rgb_array
+env = gym.make('PandaReachCam-v3', render_mode="rgb_array") # rgb_array
 
 model = TD3(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, learning_rate=1e-4, verbose=1, 
             train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=100,
