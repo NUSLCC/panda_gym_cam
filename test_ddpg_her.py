@@ -5,7 +5,7 @@ from datetime import datetime
 
 import gymnasium as gym
 
-env = gym.make('PandaReachCam-v3', render_mode="human") # rgb_array
+env = gym.make('PandaReachCam-v3', render_mode="human", control_type="joints") # rgb_array
 
 model = DDPG(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, learning_rate=1e-4,
             train_freq=64, gradient_steps=64, tau=0.05, replay_buffer_class=HerReplayBuffer, verbose=1, 
@@ -13,10 +13,10 @@ model = DDPG(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, lea
             # Parameters for HER
             replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"))
 
-tmp_path = "./tmp/"+datetime.now().strftime('ddpg_dual_table_%H_%M_%d')
+tmp_path = "./tmp/"+datetime.now().strftime('ddpg_dual_table_joints_%H_%M_%d')
 # set up logger
 new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
 model.set_logger(new_logger)
 
-model.learn(total_timesteps=30_000, progress_bar=True)
-model.save("ddpg_her_panda")
+model.learn(total_timesteps=50_000, progress_bar=True)
+model.save("ddpg_her_panda_joints_model")
