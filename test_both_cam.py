@@ -8,7 +8,7 @@ import math
 p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 planeId = p.loadURDF('plane.urdf')
-camId = p.loadURDF('URDF_files/d405_cam_with_stand.urdf', [1.5,0,0], p.getQuaternionFromEuler([0,0,0]))
+camId = p.loadURDF('URDF_files/L515_cam_with_stand.urdf', [1.5,0,0], p.getQuaternionFromEuler([0,0,0]))
 pandaId = p.loadURDF('URDF_files/panda_modified.urdf',[-0.6,0,0], p.getQuaternionFromEuler([0,0,0]), useFixedBase = True)
 
 # neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
