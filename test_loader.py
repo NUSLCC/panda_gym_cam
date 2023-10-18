@@ -8,10 +8,10 @@ env = gym.make('PandaReachCam-v3', render_mode="human", control_type="ee") # rgb
 print(env.action_space)
 print(env.observation_space)
 # HER must be loaded with the env
-model = DDPG.load("ddpg_her_panda", env=env)
+model = DDPG.load("ddpg_her_panda_ee_model", env=env)
 
 obs, _ = env.reset()
-for i in range(100):
+for i in range(1000):
     action, _states = model.predict(obs, deterministic=True)
     print(action)
     obs, reward, terminated, truncated, info = env.step(action)
