@@ -1,3 +1,4 @@
+
 import pybullet as p
 import pybullet_data
 import time
@@ -8,8 +9,11 @@ p.connect(p.GUI)
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 planeId = p.loadURDF('plane.urdf')
 camId = p.loadURDF('URDF_files/d405_cam_with_stand.urdf', [1.5,0,0], p.getQuaternionFromEuler([0,0,0]))
-pandaId = p.loadURDF('URDF_files/panda_modified.urdf',[0,0,0], p.getQuaternionFromEuler([0,0,0]))
+pandaId = p.loadURDF('URDF_files/panda_modified.urdf',[-0.6,0,0], p.getQuaternionFromEuler([0,0,0]), useFixedBase = True)
 
+# neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
+# for i in range(len(neutral_joint_values)):  
+#     p.resetJointState(pandaId, i, targetValue = neutral_joint_values[i])
 
 for i in range(10000):
     """
@@ -18,7 +22,8 @@ for i in range(10000):
     only want to see one rendering.
     """
 
-
+    # ee_state = p.getLinkState(pandaId, 11)
+    # print(ee_state[0])
     """
     Robot cam block below
     """
@@ -38,9 +43,9 @@ for i in range(10000):
     """
     camera_state2 = p.getLinkState(camId, 1)
     camera_pos2 = np.array(camera_state2[0])
-    camera_pos2[0] = camera_pos2[0] - 0.0115*math.cos(math.pi/4) -0.001 # 11.5 mm is half of D405 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
-    camera_pos2[2] = camera_pos2[2] - 0.0115*math.sin(math.pi/4) - 0.001
-    camera_orn2 = np.array(camera_state2[1])
+    camera_pos2[0] = camera_pos2[0] - 0.013*math.cos(math.pi/4) # 13 mm is half of L515 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
+    camera_pos2[2] = camera_pos2[2] - 0.013*math.sin(math.pi/4) 
+    camera_orn2 = np.array(p.getQuaternionFromEuler([math.pi/4, 0, math.pi/2]))
 
     rot_matrix2 = np.array(p.getMatrixFromQuaternion(camera_orn2)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
     forward_vec2 = rot_matrix2.dot(np.array((0, 0, -1)))
@@ -66,7 +71,16 @@ for i in range(10000):
     #rgb_img = np.array(self.rgb_img).reshape(self.height, self.width, 4)[:, :, :3]
     #rgb_img2 = np.array(self.rgb_img).reshape(self.height, self.width, 4)[:, :, :3]
 
+    ee_state = p.getLinkState(pandaId, 11)
+    print(ee_state[0])
+
+    joint_poses = p.calculateInverseKinematics(pandaId, 11, [0.155, 0.255, 0], p.getQuaternionFromEuler([0,-math.pi, math.pi/2]))
+    for i in range(7):
+        p.setJointMotorControl2(pandaId, i, controlMode=p.POSITION_CONTROL, targetPosition=joint_poses[i])
+
+    p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING) 
     p.stepSimulation()
     time.sleep(1./240.)
 
 p.disconnect()
+

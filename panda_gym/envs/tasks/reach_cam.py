@@ -66,9 +66,9 @@ class ReachCam(Task):
         Stationary camera that is directly in front of the robot arm
         """
         cam_pos = self.sim.get_link_position("stationary_camera", self.stationary_cam_link)
-        cam_orn = self.sim.get_link_orientation("stationary_camera", self.stationary_cam_link)
-        cam_pos[0] = cam_pos[0] - 0.0115*math.cos(math.pi/4) -0.001 # 11.5 mm is half of D405 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
-        cam_pos[2] = cam_pos[2] - 0.0115*math.sin(math.pi/4) - 0.001
+        cam_orn = np.array(p.getQuaternionFromEuler([math.pi/4, 0, math.pi/2]))
+        cam_pos[0] = cam_pos[0] - 0.013*math.cos(math.pi/4) # 13 mm is half of L515 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
+        cam_pos[2] = cam_pos[2] - 0.013*math.sin(math.pi/4) 
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))

@@ -10,5 +10,5 @@ for _ in range(500):
     action = env.action_space.sample() # random action
     observation, reward, terminated, truncated, info = env.step(action)
 
-    if terminated or truncated:
+    if _ % 5 == 0:
         observation, info = env.reset()
