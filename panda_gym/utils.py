@@ -127,11 +127,14 @@ def generate_object_range():
         obj_range_high (np.ndarray): coordinates of the maximum of obj range
     """
 
-    x_min = -0.1
-    x_max = 0.25
-    y_min = -0.35
-    y_max = 0.35
-
+    # x_min = -0.25
+    # x_max = 0.25
+    # y_min = -0.35
+    # y_max = 0.35
+    x_min = -0.15
+    x_max = 0.2
+    y_min = -0.3
+    y_max = 0.3
     # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated
     obj_range_low = np.array([x_min, y_min, 0])
     obj_range_high = np.array([x_max, y_max, 0]) 
