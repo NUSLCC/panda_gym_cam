@@ -49,7 +49,7 @@ class ReachCam(Task):
         )
         self.sim.loadURDF( 
             body_name="stationary_camera",
-            fileName="URDF_files/d405_cam_with_stand.urdf",
+            fileName="URDF_files/L515_cam_with_stand.urdf",
             basePosition=[1.5, 0.0, 0.0],
             useFixedBase=True,
         )
