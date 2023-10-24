@@ -1,10 +1,10 @@
 import numpy as np
 
 from panda_gym.pybullet import PyBullet
-from panda_gym.envs.robots.panda_camera import PandaWithCamera
+from panda_gym.envs.robots.panda_cam import PandaCam
 
 sim = PyBullet(render_mode="human")
-robot = PandaWithCamera(sim)
+robot = PandaCam(sim)
 
 for _ in range(10000):
     robot.set_action(np.array([1.0]))

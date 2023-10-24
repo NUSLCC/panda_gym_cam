@@ -2,9 +2,11 @@ from typing import Optional
 
 import numpy as np
 
+from panda_gym.pybullet import PyBullet
 from panda_gym.envs.core import RobotTaskEnv
+from panda_gym.envs.core import RobotCamTaskEnv
 from panda_gym.envs.robots.panda import Panda
-from panda_gym.envs.robots.panda_camera import PandaWithCamera
+from panda_gym.envs.robots.panda_cam import PandaCam
 from panda_gym.envs.tasks.flip import Flip
 from panda_gym.envs.tasks.pick_and_place import PickAndPlace
 from panda_gym.envs.tasks.push import Push
@@ -12,7 +14,6 @@ from panda_gym.envs.tasks.reach import Reach
 from panda_gym.envs.tasks.reach_cam import ReachCam
 from panda_gym.envs.tasks.slide import Slide
 from panda_gym.envs.tasks.stack import Stack
-from panda_gym.pybullet import PyBullet
 
 
 class PandaFlipEnv(RobotTaskEnv):
@@ -216,7 +217,7 @@ class PandaReachEnv(RobotTaskEnv):
         )
 
 
-class PandaReachCamEnv(RobotTaskEnv):
+class PandaReachCamEnv(RobotCamTaskEnv):
     """Reach task wih Panda Cam robot.
 
     Args:
@@ -240,7 +241,7 @@ class PandaReachCamEnv(RobotTaskEnv):
         self,
         render_mode: str = "rgb_array",
         reward_type: str = "dense",
-        control_type: str = "joint",
+        control_type: str = "joints",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
@@ -251,7 +252,7 @@ class PandaReachCamEnv(RobotTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = PandaWithCamera(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = PandaCam(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
         task = ReachCam(sim, reward_type=reward_type, get_ee_position=robot.get_ee_position)
         super().__init__(
             robot,
@@ -264,7 +265,6 @@ class PandaReachCamEnv(RobotTaskEnv):
             render_pitch=render_pitch,
             render_roll=render_roll,
         )
-
 
 
 class PandaSlideEnv(RobotTaskEnv):

@@ -7,3 +7,6 @@ _build/
 build/
 .DS_Store
 sandbox
+tmp/
+events.out.tfevents.*
+*zip
