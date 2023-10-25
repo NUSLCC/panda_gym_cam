@@ -138,7 +138,7 @@ class PandaCam(PyBulletRobot):
 
     def reset(self) -> None:
         self.set_joint_neutral()
-
+        
     def set_joint_neutral(self) -> None:
         """Set the robot to its neutral pose."""
         self.set_joint_angles(self.neutral_joint_values)

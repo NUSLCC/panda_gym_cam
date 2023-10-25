@@ -38,7 +38,28 @@ class ReachCam(Task):
 
     def _create_scene(self) -> None:
         self.sim.create_plane(z_offset=-0.4)
-        self.sim.create_table(length=1.1, width=0.7, height=0.4, x_offset=-0.3)
+        #self.sim.create_table(length=0.64, width=0.64, height=0.398, x_offset=-0.6)
+        self.sim.create_box(
+            body_name="black_panda_table",
+            half_extents=np.array([0.32, 0.32, 0.398/2]),
+            mass=1.0,
+            position=np.array([-0.68, 0, -0.398/2]),
+            rgba_color=np.array([0, 0, 0, 1]),
+        )
+        self.sim.create_box(
+            body_name="silver_table_block",
+            half_extents=np.array([0.2, 0.2, 0.01]),
+            mass=1.0,
+            position=np.array([-0.68, 0, -0.0001]),
+            rgba_color=np.array([192/255, 192/255, 192/255, 1]),
+        )
+        self.sim.create_box(
+            body_name="white_table",
+            half_extents=np.array([0.4, 0.4, 0.398/2]),
+            mass=1.0,
+            position=np.array([0.04, 0, -0.398/2]),
+            rgba_color=np.array([1, 1, 1, 1]),
+        )
         self.sim.create_sphere(
             body_name="target",
             radius=self.object_size/2,
