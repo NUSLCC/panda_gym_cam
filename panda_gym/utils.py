@@ -1,5 +1,9 @@
 import numpy as np
 import math
+from torchvision import transforms
+from PIL import Image
+import matplotlib.pyplot as plt
+import cv2
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
@@ -140,3 +144,20 @@ def generate_object_range():
     obj_range_high = np.array([x_max, y_max, 0]) 
 
     return obj_range_low, obj_range_high
+
+def colorjitter(img, brightness, contrast, saturation, hue):
+    """
+    Applies color jitter to the input image
+    Args:
+        RGB image (np.ndarray) of either active-view or passive-view camera. 
+    Returns:
+        RGB image (np.ndarray) that has brightness, contrast, saturation and hue jittered. 
+    """
+    img = np.array(img).astype(np.uint8).transpose(1, 0, 2)
+    pil_img = Image.fromarray(img)
+    pil_img.save('before.jpg')
+    color_jitter = transforms.ColorJitter(brightness = brightness, contrast=contrast, saturation=saturation, hue=hue)
+    pil_img = color_jitter(pil_img)
+    jittered_img = np.asarray(pil_img).astype(np.uint8).transpose(1, 0, 2)
+    pil_img.save('after.jpg')
+    return jittered_img
