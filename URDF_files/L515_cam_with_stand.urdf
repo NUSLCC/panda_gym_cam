@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<robot name="D405_camera_with_stand">
+<robot name="L515_camera_with_stand">
   <link name="vertical_link">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -8,7 +8,7 @@
     </inertial>
     <visual>
       <geometry>
-        <box size="0.01 0.01 2"/>
+        <box size="0.01 0.01 0.8"/>
       </geometry>
     </visual>
   </link>
@@ -21,7 +21,7 @@
     </inertial>
     <visual>
       <geometry>
-        <box size="0.5 0.01 0.01"/>
+        <box size="0.1 0.01 0.01"/>
       </geometry>
     </visual>
   </link>
@@ -43,13 +43,13 @@
 <joint name="vertical_to_horizontal" type="fixed">
     <parent link="vertical_link"/>
     <child link="horizontal_link"/>
-    <origin xyz="-0.245 0 1.005"/>
+    <origin xyz="-0.045 0 0.405"/>
   </joint>
 
 <joint name="camera_joint" type="fixed">
     <parent link="horizontal_link"/>
     <child link="camera_link"/>
-    <origin rpy="3.1416 0.7854 0" xyz="-0.25 0 -0.014"/>
+    <origin rpy="3.1416 0.5236 0" xyz="-0.05 0 -0.014"/>
   </joint>
-
+#originally 0.7854 
 </robot>

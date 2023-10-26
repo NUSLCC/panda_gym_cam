@@ -3,11 +3,13 @@ from typing import Any, Dict, Optional
 import pybullet as p
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
 from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
+from panda_gym.utils import colorjitter
 
 
 class ReachCam(Task):
@@ -33,12 +35,12 @@ class ReachCam(Task):
         self.cam_height: int = 90
         self.cam_link = 13
         self.stationary_cam_link = 1
+        self.stationary_cam_pitch_angle = 60
         with self.sim.no_rendering():
             self._create_scene()
 
     def _create_scene(self) -> None:
         self.sim.create_plane(z_offset=-0.4)
-        #self.sim.create_table(length=0.64, width=0.64, height=0.398, x_offset=-0.6)
         self.sim.create_box(
             body_name="black_panda_table",
             half_extents=np.array([0.32, 0.32, 0.398/2]),
@@ -66,17 +68,54 @@ class ReachCam(Task):
             mass=0.0,
             ghost=True,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.1, 0.9, 0.1, 0.3]),
+            rgba_color=np.array([0.1, 0.9, 0.1, 1]),
         )
         self.sim.loadURDF( 
             body_name="stationary_camera",
             fileName="URDF_files/L515_cam_with_stand.urdf",
-            basePosition=[1.5, 0.0, 0.0],
+            basePosition=[0.55, 0, 0.5-0.4],
             useFixedBase=True,
         )
 
+        # self.sim.create_sphere(
+        #     body_name="outer",
+        #     radius=self.object_size/2,
+        #     mass=0.0,
+        #     ghost=True,
+        #     position=np.array([-0.05094756, -0.21310885, self.object_size / 2]),
+        #     rgba_color=np.array([0, 0, 0, 1]),
+        # )
+        # self.sim.create_sphere(
+        #     body_name="outer",
+        #     radius=self.object_size/2,
+        #     mass=0.0,
+        #     ghost=True,
+        #     position=np.array([-0.05094756, 0.21278672, self.object_size / 2]),
+        #     rgba_color=np.array([0, 0, 0, 1]),
+        # )
+        # self.sim.create_sphere(
+        #     body_name="outer",
+        #     radius=self.object_size/2,
+        #     mass=0.0,
+        #     ghost=True,
+        #     position=np.array([0.1978265, 0.21278672, self.object_size / 2]),
+        #     rgba_color=np.array([0, 0, 0, 1]),
+        # )
+        # self.sim.create_sphere(
+        #     body_name="outer",
+        #     radius=self.object_size/2,
+        #     mass=0.0,
+        #     ghost=True,
+        #     position=np.array([0.1978265, -0.21310885, self.object_size / 2]),
+        #     rgba_color=np.array([0, 0, 0, 1]),
+        # )
+
     def get_obs(self) -> np.ndarray:
-        return self.render_from_stationary_cam()
+        rgb_img = self.render_from_stationary_cam()
+       # jittered_img = colorjitter(rgb_img, brightness = 0.2, contrast = 0.2, saturation = 0.2, hue = 0.2)
+        plt.imshow(rgb_img)
+        plt.show()
+        return rgb_img
 
     def render_from_stationary_cam(
         self,
@@ -87,16 +126,16 @@ class ReachCam(Task):
         Stationary camera that is directly in front of the robot arm
         """
         cam_pos = self.sim.get_link_position("stationary_camera", self.stationary_cam_link)
-        cam_orn = np.array(p.getQuaternionFromEuler([math.pi/4, 0, math.pi/2]))
-        cam_pos[0] = cam_pos[0] - 0.013*math.cos(math.pi/4) # 13 mm is half of L515 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
-        cam_pos[2] = cam_pos[2] - 0.013*math.sin(math.pi/4) 
+        cam_orn = np.array(p.getQuaternionFromEuler([math.radians(90-self.stationary_cam_pitch_angle), 0, math.pi/2]))
+        cam_pos[0] = cam_pos[0] - 0.013*math.cos(math.radians(90-self.stationary_cam_pitch_angle)) # 13 mm is half of L515 cam thickness, but need to use trigonometry because the camera is rotated 45 deg
+        cam_pos[2] = cam_pos[2] - 0.013*math.sin(math.radians(90-self.stationary_cam_pitch_angle)) 
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))
         target_position = cam_pos + 0.1 * forward_vec
         view_matrix = self.sim.physics_client.computeViewMatrix(cam_pos, target_position, up_vec)
         aspect_ratio = cam_width / cam_height
-        fov = 58
+        fov = 43
         nearVal = 0.01
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
