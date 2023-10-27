@@ -155,9 +155,7 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     """
     img = np.array(img).astype(np.uint8).transpose(1, 0, 2)
     pil_img = Image.fromarray(img)
-    pil_img.save('before.jpg')
     color_jitter = transforms.ColorJitter(brightness = brightness, contrast=contrast, saturation=saturation, hue=hue)
     pil_img = color_jitter(pil_img)
     jittered_img = np.asarray(pil_img).astype(np.uint8).transpose(1, 0, 2)
-    pil_img.save('after.jpg')
     return jittered_img

@@ -111,11 +111,15 @@ class ReachCam(Task):
         # )
 
     def get_obs(self) -> np.ndarray:
-        rgb_img = self.render_from_stationary_cam()
-       # jittered_img = colorjitter(rgb_img, brightness = 0.2, contrast = 0.2, saturation = 0.2, hue = 0.2)
-        plt.imshow(rgb_img)
+        rgb_img = self.render_from_stationary_cam() 
+        jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        fig, axes = plt.subplots(1, 2)
+        axes[0].imshow(rgb_img.reshape(90, 160, 3))
+        axes[0].set_title('Original image')
+        axes[1].imshow(jittered_img.reshape(90, 160, 3))
+        axes[1].set_title('Jittered image')
         plt.show()
-        return rgb_img
+        return jittered_img
 
     def render_from_stationary_cam(
         self,
