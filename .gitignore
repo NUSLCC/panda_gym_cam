@@ -10,3 +10,4 @@ sandbox
 tmp/
 events.out.tfevents.*
 *zip
+*.pth
