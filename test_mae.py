@@ -84,6 +84,7 @@ def run_one_image(img, model):
     plt.subplot(1, 4, 4)
     show_image(im_paste[0], "reconstruction + visible")
 
+    plt.tight_layout()
     plt.show()
 
 img_path = 'test_image.png'
