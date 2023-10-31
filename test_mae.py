@@ -69,6 +69,10 @@ def run_one_image(img, model):
     # MAE reconstruction pasted with visible patches
     im_paste = x * (1 - mask) + y * mask
 
+    # Convert tensor to RGB array with reverse normalization
+
+    im_paste_rgb = torch.clip((im_paste * imagenet_std + imagenet_mean) * 255, 0, 255).int().numpy()
+
     # make the plt figure larger
     plt.rcParams['figure.figsize'] = [24, 24]
 
@@ -86,6 +90,7 @@ def run_one_image(img, model):
 
     plt.tight_layout()
     plt.show()
+
 
 img_path = 'test_image.png'
 img = Image.open(img_path)

@@ -10,7 +10,7 @@ from panda_gym.utils import distance
 from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
 from panda_gym.utils import colorjitter
-
+from panda_gym.utils import masked_auto_encoder
 
 class ReachCam(Task):
     def __init__(
@@ -113,18 +113,15 @@ class ReachCam(Task):
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam() 
         jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
-        fig, axes = plt.subplots(1, 2)
-        axes[0].imshow(rgb_img.reshape(90, 160, 3))
-        axes[0].set_title('Original image')
-        axes[1].imshow(jittered_img.reshape(90, 160, 3))
-        axes[1].set_title('Jittered image')
-        plt.show()
-        return jittered_img
+        mae_img = masked_auto_encoder(jittered_img)
+        return mae_img
 
     def render_from_stationary_cam(
         self,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 400,
+        cam_height: int = 224,
+        # cam_width: int = 160,
+        # cam_height: int = 90,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
