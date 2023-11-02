@@ -47,7 +47,7 @@ class PyBullet:
         else:
             raise ValueError("The 'render' argument is must be in {'rgb_array', 'human'}")
         self.physics_client = bc.BulletClient(connection_mode=self.connection_mode, options=options)
-        self.physics_client.configureDebugVisualizer(p.COV_ENABLE_GUI, 1)
+        self.physics_client.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
         self.physics_client.configureDebugVisualizer(p.COV_ENABLE_MOUSE_PICKING, 0)
 
         self.n_substeps = n_substeps
@@ -206,6 +206,16 @@ class PyBullet:
         """
         velocity = self.physics_client.getBaseVelocity(self._bodies_idx[body])[0]
         return np.array(velocity)
+    
+    def set_base_velocity(self, body: str, velocity: np.ndarray) -> np.ndarray:
+        """
+        Set the velocity of a body.
+        
+        Args: 
+            body (str): Body unique name
+            linear velocity (np.ndarray): (x, y, z) in Cartesian coordinates
+        """
+        return self.physics_client.resetBaseVelocity(self._bodies_idx[body], velocity)
 
     def get_base_angular_velocity(self, body: str) -> np.ndarray:
         """Get the angular velocity of the body.

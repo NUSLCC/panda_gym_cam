@@ -273,4 +273,31 @@ def run_one_image(img, model):
     plt.tight_layout()
     plt.show()
 
-
+def velocity_calculator(
+    target_position: np.ndarray,
+    initial_velocity: np.ndarray,
+    x_min: float = -0.15,
+    x_max: float = 0.2,
+    y_min: float = -0.3,
+    y_max: float = 0.3,
+    ):
+    """
+    Calculates velocity of the target to avoid it falling off the table
+    
+    Args:
+        Current position of target (np.ndarray): (x, y, z) pose
+        x_min (float): Min x value where target can be.
+        x_max (float): Max x value where target can be.
+        y_min (float): Min y value where target can be.
+        y_max (float): Max y value where target can be.
+        
+    Returns:
+        Velocity (np.ndarray): Velocity of target
+    """
+    target_position_x, target_position_y = target_position[0], target_position[1]
+    if target_position_x > x_max or target_position_x < x_min:
+        initial_velocity[0] *= -1
+    if target_position_y > y_max or target_position_y < y_min:
+        initial_velocity[1] *= -1 
+    modified_velocity = initial_velocity
+    return modified_velocity

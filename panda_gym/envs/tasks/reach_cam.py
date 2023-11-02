@@ -11,6 +11,7 @@ from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
 from panda_gym.utils import colorjitter
 from panda_gym.utils import masked_auto_encoder
+from panda_gym.utils import velocity_calculator
 
 class ReachCam(Task):
     def __init__(
@@ -28,6 +29,7 @@ class ReachCam(Task):
         self.distance_threshold=distance_threshold
         self.far_distance_threshold = 1.0
         self.object_size = 0.04
+        self.object_velocity_max = [0.15, 0.15, 0] # (x,y,z) velocity 
         self.get_ee_position = get_ee_position
         self.goal_range_low = None
         self.goal_range_high = None
@@ -44,21 +46,21 @@ class ReachCam(Task):
         self.sim.create_box(
             body_name="black_panda_table",
             half_extents=np.array([0.32, 0.32, 0.398/2]),
-            mass=1.0,
+            mass=0.0,
             position=np.array([-0.68, 0, -0.398/2]),
             rgba_color=np.array([0, 0, 0, 1]),
         )
         self.sim.create_box(
             body_name="silver_table_block",
             half_extents=np.array([0.2, 0.2, 0.01]),
-            mass=1.0,
+            mass=0.0,
             position=np.array([-0.68, 0, -0.0001]),
             rgba_color=np.array([192/255, 192/255, 192/255, 1]),
         )
         self.sim.create_box(
             body_name="white_table",
             half_extents=np.array([0.4, 0.4, 0.398/2]),
-            mass=1.0,
+            mass=0.0,
             position=np.array([0.04, 0, -0.398/2]),
             rgba_color=np.array([1, 1, 1, 1]),
         )
@@ -76,6 +78,7 @@ class ReachCam(Task):
             basePosition=[0.55, 0, 0.5-0.4],
             useFixedBase=True,
         )
+        self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
 
         # self.sim.create_sphere(
         #     body_name="outer",
@@ -112,16 +115,21 @@ class ReachCam(Task):
 
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam() 
-        jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
-        mae_img = masked_auto_encoder(jittered_img)
-        return mae_img
+        # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        # mae_img = masked_auto_encoder(jittered_img)
+        # return mae_img
+        target_position = self.sim.get_base_position("target")
+        self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
+        target_velocity = self.object_initial_velocity
+        self.sim.set_base_velocity("target", target_velocity)
+        return rgb_img
 
     def render_from_stationary_cam(
         self,
-        cam_width: int = 400,
-        cam_height: int = 224,
-        # cam_width: int = 160,
-        # cam_height: int = 90,
+        # cam_width: int = 400,
+        # cam_height: int = 224,
+        cam_width: int = 160,
+        cam_height: int = 90,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
@@ -153,6 +161,7 @@ class ReachCam(Task):
         self.goal_range_low, self.goal_range_high = generate_object_range()
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+        self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
