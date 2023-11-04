@@ -12,6 +12,7 @@ from panda_gym.utils import generate_object_range
 from panda_gym.utils import colorjitter
 from panda_gym.utils import masked_auto_encoder
 from panda_gym.utils import velocity_calculator
+from panda_gym.utils import sine_velocity
 
 class ReachCam(Task):
     def __init__(
@@ -119,8 +120,10 @@ class ReachCam(Task):
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
         target_position = self.sim.get_base_position("target")
+        self.object_initial_velocity = sine_velocity(target_position, np.array(self.object_initial_velocity))
         self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         target_velocity = self.object_initial_velocity
+        print(target_velocity[0])
         self.sim.set_base_velocity("target", target_velocity)
         return rgb_img
 
@@ -161,7 +164,8 @@ class ReachCam(Task):
         self.goal_range_low, self.goal_range_high = generate_object_range()
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-        self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
+       # self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
+        self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""

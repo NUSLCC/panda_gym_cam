@@ -286,6 +286,7 @@ def velocity_calculator(
     
     Args:
         Current position of target (np.ndarray): (x, y, z) pose
+        Initial_velocity (np.ndarray): (x, y, z) velocity of target
         x_min (float): Min x value where target can be.
         x_max (float): Max x value where target can be.
         y_min (float): Min y value where target can be.
@@ -301,3 +302,22 @@ def velocity_calculator(
         initial_velocity[1] *= -1 
     modified_velocity = initial_velocity
     return modified_velocity
+
+def sine_velocity(
+    target_position: np.ndarray,
+    initial_velocity: np.ndarray,
+    A: float = 0.1,
+    B: float = 80,
+):
+    """
+    Creates sinusoidal velocity of the target: v in x direction = A sin(By). v in y direction is an initialised constant.
+    NB: Time period T = 2pi/B
+    
+    Args:
+        Current position of target (np.ndarray): (x, y, z) pose
+        Initial_velocity (np.ndarray): (x, y, z) velocity of target
+    Returns:
+        Velocity (np.ndarray): Velocity of target
+    """
+    initial_velocity[0] = A*math.sin(B*target_position[1]) # change velocity of x
+    return initial_velocity
