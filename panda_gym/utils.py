@@ -125,7 +125,7 @@ def calculate_object_range(initial_x_coord, initial_y_coord, initial_z_coord):
 
 def generate_object_range():
     """
-    Calculates the (x,y,z) array ranges where the object can be generated, such that it is inside robot-cam fov
+    Calculates the (x,y,z) array ranges where the object can be generated, such that it is inside reachable area of Panda arm
      
     Args:
         initial_x_coord (float): x coordinate of panda robot-cam in neutral pos

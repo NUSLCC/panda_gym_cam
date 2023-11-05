@@ -200,6 +200,11 @@ class Task(ABC):
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
+    @abstractmethod
+    def get_obj_pos_rotation(self) -> np.ndarray:
+        """Returns obj pos and velocity."""
+
+
 class RobotTaskEnv(gym.Env):
     """Robotic task goal env, as the junction of a task and a robot.
 
@@ -353,7 +358,7 @@ class RobotTaskEnv(gym.Env):
         )
 
 class RobotCamTaskEnv(gym.Env):
-    """Robotic task goal env, as the junction of a task and a robot, with D405 cameras.
+    """Robotic task goal env, as the junction of a task and a robot, with L515 and D405 cameras.
 
     Args:
         robot (PyBulletRobot): The robot.
@@ -430,6 +435,7 @@ class RobotCamTaskEnv(gym.Env):
             "observation": observation,
             "achieved_goal": achieved_goal,
             "desired_goal": self.task.get_goal().astype(np.float32),
+            "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
         }
 
     def reset(
