@@ -47,7 +47,7 @@ class PyBullet:
         else:
             raise ValueError("The 'render' argument is must be in {'rgb_array', 'human'}")
         self.physics_client = bc.BulletClient(connection_mode=self.connection_mode, options=options)
-        self.physics_client.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        self.physics_client.configureDebugVisualizer(p.COV_ENABLE_GUI, 1)
         self.physics_client.configureDebugVisualizer(p.COV_ENABLE_MOUSE_PICKING, 0)
 
         self.n_substeps = n_substeps

@@ -38,7 +38,7 @@ class ReachCam(Task):
         self.cam_height: int = 90
         self.cam_link = 13
         self.stationary_cam_link = 1
-        self.stationary_cam_pitch_angle = 60
+        self.stationary_cam_pitch_angle = 40
         with self.sim.no_rendering():
             self._create_scene()
 

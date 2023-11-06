@@ -152,7 +152,7 @@ class PandaPickandPlaceCamEnv(RobotCamTaskEnv):
         render_roll: float = 0,
     ) -> None:
         sim = PyBullet(render_mode=render_mode, renderer=renderer)
-        robot = PandaCam(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
+        robot = PandaCam(sim, block_gripper=False, base_position=np.array([-0.6, 0.0, 0.0]), control_type=control_type)
         task = PickAndPlaceCam(sim, reward_type=reward_type)
         super().__init__(
             robot,

@@ -32,7 +32,7 @@ class PickAndPlaceCam(Task):
         self.cam_height: int = 90
         self.cam_link = 13
         self.stationary_cam_link = 1
-        self.stationary_cam_pitch_angle = 60
+        self.stationary_cam_pitch_angle = 40
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -70,7 +70,7 @@ class PickAndPlaceCam(Task):
         self.sim.loadURDF( 
             body_name="stationary_camera",
             fileName="URDF_files/L515_cam_with_stand.urdf",
-            basePosition=[0.55, 0, 0.5-0.4],
+            basePosition=[0.75, 0, 0.5-0.4],
             useFixedBase=True,
         )
         self.sim.create_box(
