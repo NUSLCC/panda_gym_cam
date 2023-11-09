@@ -3,7 +3,7 @@ Github:
 https://github.com/facebookresearch/mae
 Google colab notebook:
 https://colab.research.google.com/github/facebookresearch/mae/blob/main/demo/mae_visualize.ipynb#scrollTo=12251916-7bf0-4ee5-ba7d-3dea4441d0a4
-Requires pip install timm==0.4.5
+Requires pip install timm==0.3.2
 
 Download checkpoint from https://dl.fbaipublicfiles.com/mae/visualize/mae_visualize_vit_large_ganloss.pth
 """
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 from mae import models_mae
-from mae import pos_embed
+from mae.util import pos_embed
 
 # define the utils
 
