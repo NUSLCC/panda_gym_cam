@@ -9,7 +9,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
 from mae import models_mae
-from mae import pos_embed
+from mae.util import pos_embed
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.

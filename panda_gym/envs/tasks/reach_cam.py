@@ -123,7 +123,6 @@ class ReachCam(Task):
         self.object_initial_velocity = sine_velocity(target_position, np.array(self.object_initial_velocity))
         self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         target_velocity = self.object_initial_velocity
-        print(target_velocity[0])
         self.sim.set_base_velocity("target", target_velocity)
         return rgb_img
 
@@ -180,8 +179,7 @@ class ReachCam(Task):
 
     def is_terminated(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
-        height = self.sim.get_base_position("object")[2]
-        return np.array(d < self.distance_threshold or d > self.far_distance_threshold or height < self.object_size/2, dtype=bool)
+        return np.array(d < self.distance_threshold or d > self.far_distance_threshold, dtype=bool)
 
     def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
