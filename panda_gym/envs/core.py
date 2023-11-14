@@ -397,11 +397,13 @@ class RobotCamTaskEnv(gym.Env):
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape
         desired_goal_shape = observation["desired_goal"].shape
+        object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
                 desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float32),
                 achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32),
+                object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
             )
         )
         self.action_space = self.robot.action_space
