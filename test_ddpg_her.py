@@ -19,6 +19,8 @@ model = DDPG(policy="MultiInputPolicy",env=vec_env, batch_size=2048, gamma=0.95,
             # Parameters for HER
             replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"))
 
+# print(model.policy)
+
 tmp_path = "./tmp/"+datetime.now().strftime('ddpg_dual_table_joints_%H_%M_%d')
 # set up logger
 new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])

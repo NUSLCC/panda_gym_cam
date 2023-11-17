@@ -200,9 +200,9 @@ class Task(ABC):
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
-    @abstractmethod
-    def get_obj_pos_rotation(self) -> np.ndarray:
-        """Returns obj pos and velocity."""
+    # @abstractmethod
+    # def get_obj_pos_rotation(self) -> np.ndarray:
+    #     """Returns obj pos and velocity."""
 
 
 class RobotTaskEnv(gym.Env):
@@ -397,13 +397,13 @@ class RobotCamTaskEnv(gym.Env):
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape
         desired_goal_shape = observation["desired_goal"].shape
-        object_pos_rotation_shape = observation["object_pos_rotation"].shape
+     #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
                 desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float32),
-                achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32),
-                object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
+                achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32)
+           #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
             )
         )
         self.action_space = self.robot.action_space
@@ -436,8 +436,8 @@ class RobotCamTaskEnv(gym.Env):
         return {
             "observation": observation,
             "achieved_goal": achieved_goal,
-            "desired_goal": self.task.get_goal().astype(np.float32),
-            "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
+            "desired_goal": self.task.get_goal().astype(np.float32)
+       #     "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
         }
 
     def reset(
