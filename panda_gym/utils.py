@@ -151,6 +151,46 @@ def generate_object_range():
 
     return obj_range_low, obj_range_high
 
+def sample_object_obstacle_goal(object_size, goal_range_low, goal_range_high, object_obstacle_distance, obstacle_size, obstacle_1_pos, obstacle_2_pos):
+    """
+    Calculates the (x,y,z) array goal, such that it is inside reachable area of Panda arm and a certain distance away from obstacles
+     
+    Args:
+        object_size (float): radius of the object 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+        object_obstacle_distance (float): Minimum distance from object to obstacles in m
+        obstacle_size (float): Half extent of the obstacle
+        obstacle_1_pos (np.ndarray): (x,y,z) array of obstacle 1 pos
+        obstacle_2_pos (np.ndarray): (x,y,z) array of obstacle 2 pos
+         
+    Returns: 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+    """
+
+
+    obstacle_1_x, obstacle_1_y = obstacle_1_pos[0], obstacle_1_pos[1]
+    obstacle_2_x, obstacle_2_y = obstacle_2_pos[0], obstacle_2_pos[1]
+
+    exclude_ranges = {
+        'x': [(obstacle_1_x - obstacle_size - object_obstacle_distance, obstacle_1_x + obstacle_size + object_obstacle_distance), (obstacle_2_x - obstacle_size - object_obstacle_distance, obstacle_2_x + obstacle_size + object_obstacle_distance)],
+        'y': [(obstacle_1_y - obstacle_size - object_obstacle_distance, obstacle_1_y + obstacle_size + object_obstacle_distance), (obstacle_2_x - obstacle_size - object_obstacle_distance, obstacle_2_x + obstacle_size + object_obstacle_distance)]
+    }
+
+    while True:
+        goal = np.array([0.0, 0.0, object_size / 2])  # z offset for the sphere center
+        noise = np.random.uniform(goal_range_low, goal_range_high)
+        goal += noise
+
+        if (
+        not any(i[0] <= goal[0] <= i[1] for i in exclude_ranges['x']) and  # if sampled x value is not within the exclude ranges
+        not any(j[0] <= goal[1] <= j[1] for j in exclude_ranges['y']) # if sampled y value is not within the exclude ranges
+        ):
+            break # if sampled x or y value is inside exclude ranges, sample again 
+
+    return goal
+
 def colorjitter(img, brightness, contrast, saturation, hue):
     """
     Applies color jitter to the input image
