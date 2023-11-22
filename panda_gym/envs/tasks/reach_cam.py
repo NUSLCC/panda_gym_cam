@@ -77,7 +77,7 @@ class ReachCam(Task):
         self.sim.loadURDF( 
             body_name="stationary_camera",
             fileName="URDF_files/L515_cam_with_stand.urdf",
-            basePosition=[0.55, 0, 0.5-0.4],
+            basePosition=[0.65, 0, 0.5-0.3],
             useFixedBase=True,
         )
         self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
