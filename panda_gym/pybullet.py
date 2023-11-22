@@ -677,3 +677,18 @@ class PyBullet:
             linkIndex=link,
             spinningFriction=spinning_friction,
         )
+
+    def get_contact_points(self, body_a, body_b) -> np.ndarray:
+        """Returns the contact/collision points between body_a and body_b.
+
+        Args:
+            body_a (str): Body unique name.
+            body_b (str): Body unique name. 
+
+        Returns:
+            contact_points (np.ndarray): List of contact points
+        """
+        self.physics_client.getContactPoints(
+            bodyA=self._bodies_idx[body_a],
+            bodyB=self._bodies_idx[body_b]
+        )
