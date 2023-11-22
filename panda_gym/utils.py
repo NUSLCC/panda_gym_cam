@@ -151,6 +151,31 @@ def generate_object_range():
 
     return obj_range_low, obj_range_high
 
+def generate_semicircle_object_range():
+    """
+    Calculates the (x,y,z) array ranges where the object can be generated, such that it is inside semi-circle reachable area of Panda arm (radius = 0.64m)
+
+    Returns: 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+    """
+
+    radius = 0.64
+    base_x = -0.68 # x coord of base of panda robot
+    x_min = -0.36
+    x_max = -0.04  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
+    y_min = -0.64
+    y_max = 0.64
+    sampled_x = np.random.uniform(x_min, x_max)
+    x_distance_from_base = sampled_x - base_x
+    sampled_y = math.sqrt(radius ** 2 - sampled_x ** 2) # need to adjust y according to equation of a circle
+
+    # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated\
+    obj_range_low = np.array([sampled_x, -sampled_y, 0])
+    obj_range_high = np.array([sampled_x, sampled_y, 0]) 
+
+    return obj_range_low, obj_range_high
+
 def sample_object_obstacle_goal(object_size, goal_range_low, goal_range_high, object_obstacle_distance, obstacle_size, obstacle_1_pos, obstacle_2_pos):
     """
     Calculates the (x,y,z) array goal, such that it is inside reachable area of Panda arm and a certain distance away from obstacles
@@ -346,7 +371,7 @@ def velocity_calculator(
 def sine_velocity(
     target_position: np.ndarray,
     initial_velocity: np.ndarray,
-    A: float = 0.1,
+    A: float = 3, # used to be 0.1
     B: float = 80,
 ):
     """

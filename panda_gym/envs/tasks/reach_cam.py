@@ -9,6 +9,7 @@ from panda_gym.envs.core import Task
 from panda_gym.utils import distance
 from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
+from panda_gym.utils import generate_semicircle_object_range
 from panda_gym.utils import colorjitter
 from panda_gym.utils import masked_auto_encoder
 from panda_gym.utils import velocity_calculator
@@ -60,7 +61,7 @@ class ReachCam(Task):
         )
         self.sim.create_box(
             body_name="white_table",
-            half_extents=np.array([0.4, 0.4, 0.398/2]),
+            half_extents=np.array([0.4, 0.64, 0.398/2]), 
             mass=0.0,
             position=np.array([0.04, 0, -0.398/2]),
             rgba_color=np.array([1, 1, 1, 1]),
@@ -119,11 +120,11 @@ class ReachCam(Task):
         # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
-        target_position = self.sim.get_base_position("target")
-        self.object_initial_velocity = sine_velocity(target_position, np.array(self.object_initial_velocity))
-        self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
-        target_velocity = self.object_initial_velocity
-        self.sim.set_base_velocity("target", target_velocity)
+        # target_position = self.sim.get_base_position("target")
+        # self.object_initial_velocity = sine_velocity(target_position, np.array(self.object_initial_velocity))
+        # self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
+        # target_velocity = self.object_initial_velocity
+        # self.sim.set_base_velocity("target", target_velocity)
         return rgb_img
 
     def render_from_stationary_cam(
@@ -160,11 +161,11 @@ class ReachCam(Task):
 
     def reset(self) -> None:
         self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
-        self.goal_range_low, self.goal_range_high = generate_object_range()
+        self.goal_range_low, self.goal_range_high = generate_semicircle_object_range()
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
        # self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
-        self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
+      #  self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
