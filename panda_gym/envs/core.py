@@ -204,6 +204,9 @@ class Task(ABC):
     # def get_obj_pos_rotation(self) -> np.ndarray:
     #     """Returns obj pos and velocity."""
 
+    # @abstractmethod
+    # def is_in_collision(self) -> np.ndarray:
+    #     """Returns contact point information."""
 
 class RobotTaskEnv(gym.Env):
     """Robotic task goal env, as the junction of a task and a robot.
@@ -485,6 +488,7 @@ class RobotCamTaskEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
         self.sim.step()
+     #   contact_points = self.task.is_in_collision()
         observation = self._get_obs()
         # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_terminated(observation["achieved_goal"], self.task.get_goal()))

@@ -151,6 +151,71 @@ def generate_object_range():
 
     return obj_range_low, obj_range_high
 
+def generate_semicircle_object_range():
+    """
+    Calculates the (x,y,z) array ranges where the object can be generated, such that it is inside semi-circle reachable area of Panda arm (radius = 0.64m)
+
+    Returns: 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+    """
+
+    radius = 0.64
+    base_x = -0.68 # x coord of base of panda robot
+    x_min = -0.36
+    x_max = -0.04  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
+    y_min = -0.64
+    y_max = 0.64
+    sampled_x = np.random.uniform(x_min, x_max)
+    x_distance_from_base = sampled_x - base_x
+    sampled_y = math.sqrt(radius ** 2 - sampled_x ** 2) # need to adjust y according to equation of a circle
+
+    # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated\
+    obj_range_low = np.array([sampled_x, -sampled_y, 0])
+    obj_range_high = np.array([sampled_x, sampled_y, 0]) 
+
+    return obj_range_low, obj_range_high
+
+def sample_object_obstacle_goal(object_size, goal_range_low, goal_range_high, object_obstacle_distance, obstacle_size, obstacle_1_pos, obstacle_2_pos):
+    """
+    Calculates the (x,y,z) array goal, such that it is inside reachable area of Panda arm and a certain distance away from obstacles
+     
+    Args:
+        object_size (float): radius of the object 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+        object_obstacle_distance (float): Minimum distance from object to obstacles in m
+        obstacle_size (float): Half extent of the obstacle
+        obstacle_1_pos (np.ndarray): (x,y,z) array of obstacle 1 pos
+        obstacle_2_pos (np.ndarray): (x,y,z) array of obstacle 2 pos
+         
+    Returns: 
+        obj_range_low (np.ndarray): coordinates of the minimum of obj range
+        obj_range_high (np.ndarray): coordinates of the maximum of obj range
+    """
+
+
+    obstacle_1_x, obstacle_1_y = obstacle_1_pos[0], obstacle_1_pos[1]
+    obstacle_2_x, obstacle_2_y = obstacle_2_pos[0], obstacle_2_pos[1]
+
+    exclude_ranges = {
+        'x': [(obstacle_1_x - obstacle_size - object_obstacle_distance, obstacle_1_x + obstacle_size + object_obstacle_distance), (obstacle_2_x - obstacle_size - object_obstacle_distance, obstacle_2_x + obstacle_size + object_obstacle_distance)],
+        'y': [(obstacle_1_y - obstacle_size - object_obstacle_distance, obstacle_1_y + obstacle_size + object_obstacle_distance), (obstacle_2_x - obstacle_size - object_obstacle_distance, obstacle_2_x + obstacle_size + object_obstacle_distance)]
+    }
+
+    while True:
+        goal = np.array([0.0, 0.0, object_size / 2])  # z offset for the sphere center
+        noise = np.random.uniform(goal_range_low, goal_range_high)
+        goal += noise
+
+        if (
+        not any(i[0] <= goal[0] <= i[1] for i in exclude_ranges['x']) and  # if sampled x value is not within the exclude ranges
+        not any(j[0] <= goal[1] <= j[1] for j in exclude_ranges['y']) # if sampled y value is not within the exclude ranges
+        ):
+            break # if sampled x or y value is inside exclude ranges, sample again 
+
+    return goal
+
 def colorjitter(img, brightness, contrast, saturation, hue):
     """
     Applies color jitter to the input image
@@ -306,7 +371,7 @@ def velocity_calculator(
 def sine_velocity(
     target_position: np.ndarray,
     initial_velocity: np.ndarray,
-    A: float = 0.1,
+    A: float = 3, # used to be 0.1
     B: float = 80,
 ):
     """
