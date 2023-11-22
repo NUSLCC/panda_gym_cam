@@ -18,7 +18,7 @@ for task in ["Reach", "ReachCam", "ReachCamObstacle", "Slide", "Push", "PickAndP
                 id=env_id,
                 entry_point=f"panda_gym.envs:Panda{task}Env",
                 kwargs={"reward_type": reward_type, "control_type": control_type},
-                max_episode_steps=100 if task == "Stack" else 50,
+                max_episode_steps=100,
             )
 
             ENV_IDS.append(env_id)
