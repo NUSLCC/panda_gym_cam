@@ -2,7 +2,7 @@ from panda_gym.envs import PandaReachCamEnv
 from panda_gym.envs import PandaReachCamObstacleEnv
 from panda_gym.envs import PandaPickandPlaceCamEnv
 
-env = PandaReachCamObstacleEnv(render_mode="human") # rgb_array
+env = PandaReachCamEnv(render_mode="human") # rgb_array
 
 observation, info = env.reset()
 
