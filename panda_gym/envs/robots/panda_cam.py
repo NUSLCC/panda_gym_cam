@@ -160,3 +160,8 @@ class PandaCam(PyBulletRobot):
     def get_cam_position(self) -> np.ndarray:
         """Returns the position of the end-effector as (x, y, z)"""
         return self.get_link_position(self.cam_link)
+    
+    def get_arm_joint_angles(self) -> np.ndarray:
+        """Returns array of current arm joint angles"""
+        current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(7)])
+        return current_arm_joint_angles
