@@ -21,10 +21,10 @@ model = SAC(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, lear
             policy_kwargs=dict(net_arch=[512, 512, 512], n_critics=2))
 
 
-tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_table_%H_%M_%d')
+tmp_path = "./tmp/"+datetime.now().strftime('sac_single_table_%H_%M_%d')
 # set up logger
 new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
 model.set_logger(new_logger)
 
-model.learn(total_timesteps=30_000, progress_bar=True)
+model.learn(total_timesteps=100_000, progress_bar=True)
 model.save("sac_her_panda")
