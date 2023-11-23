@@ -111,8 +111,8 @@ class PandaCam(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
-        pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam().astype(np.uint8))
-        print(f'Green pixel count: \n {pixel_count}')
+       # pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam().astype(np.uint8))
+      #  print(f'Green pixel count: \n {pixel_count}')
         return self.render_from_robot_cam()
 
     def render_from_robot_cam(
