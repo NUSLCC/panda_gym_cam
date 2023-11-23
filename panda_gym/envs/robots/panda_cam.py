@@ -8,6 +8,8 @@ from gymnasium import spaces
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
+from panda_gym.utils import color_threshold_pixel_counter
+
 class PandaCam(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
 
@@ -109,6 +111,8 @@ class PandaCam(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
+        pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam().astype(np.uint8))
+        print(f'Green pixel count: \n {pixel_count}')
         return self.render_from_robot_cam()
 
     def render_from_robot_cam(
