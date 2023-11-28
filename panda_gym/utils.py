@@ -386,3 +386,23 @@ def sine_velocity(
     """
     initial_velocity[0] = A*math.sin(B*target_position[1]) # change velocity of x
     return initial_velocity
+
+def color_threshold_pixel_counter(
+        img: np.ndarray,
+        lower_bound: np.ndarray = np.array([40,50,50]),
+        upper_bound: np.ndarray = np.array([80, 255, 255])
+    ):
+    """
+    Performs thresholding in the input image and returns the number of (default: green object) pixels in the img within the lower and upper bound.
+    
+    Args:
+        Img (np.ndarray): observation image of panda active camera
+        Upper bound (np.ndarray): upper bound of HSV to threshold
+        Lower bound (np.ndarray): lower bound of HSV to threshold
+    Returns:
+        Pixel count (int): Number of green pixels in the image
+    """
+    img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    mask = cv2.inRange(img_hsv, lower_bound, upper_bound)
+    pixel_count = np.sum(mask == 255)
+    return pixel_count

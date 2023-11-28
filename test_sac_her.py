@@ -8,7 +8,7 @@ from datetime import datetime
 import gymnasium as gym
 
 # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
-env_id = "PandaReachCam-v3"
+env_id = "PandaReachCamJoints-v3"
 num_cpu = 4
 env = make_vec_env(env_id, n_envs=num_cpu, seed=0)
 
