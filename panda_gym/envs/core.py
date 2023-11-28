@@ -445,11 +445,11 @@ class RobotCamTaskEnv(gym.Env):
         robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
         task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
-        if object_in_cam: # pass in both active and static camera img
-            observation = np.concatenate([robot_obs, task_obs])
-        else: # only pass in static cam
+        if object_in_cam: # pass in active img
+            observation = robot_obs
+        else: # pass in np zeros from active img
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
-            observation = np.concatenate([robot_obs, task_obs])
+            observation = robot_obs
         #print(f'Observation shape: {observation.shape}')
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
