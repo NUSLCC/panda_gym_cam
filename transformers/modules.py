@@ -4,7 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 from functools import partial
-
+import gymnasium as gym
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 def _get_out_shape(in_shape, layers, attn=False):
 	x = torch.randn(*in_shape).unsqueeze(0)
@@ -167,7 +168,7 @@ class SharedCNN(nn.Module):
 
 
 class HeadCNN(nn.Module):
-	def __init__(self, in_shape, num_layers=0, num_filters=32, flatten=True):
+	def __init__(self, in_shape, num_layers=3, num_filters=32, flatten=True):
 		super().__init__()
 		self.layers = []
 		for _ in range(0, num_layers):
@@ -302,7 +303,6 @@ class MultiViewEncoder(nn.Module):
 		
 		return x
 
-
 class Actor(nn.Module):
 	def __init__(self, out_dim, projection_dim, state_shape, action_shape, hidden_dim, hidden_dim_state, log_std_min, log_std_max):
 		super().__init__()
@@ -310,7 +310,7 @@ class Actor(nn.Module):
 		self.log_std_max = log_std_max
 
 		self.trunk = nn.Sequential(nn.Linear(out_dim, projection_dim),
-								   nn.LayerNorm(projection_dim), nn.Tanh())
+								nn.LayerNorm(projection_dim), nn.Tanh())
 
 		self.layers = nn.Sequential(
 			nn.Linear(projection_dim, hidden_dim), nn.ReLU(inplace=True),
@@ -320,19 +320,18 @@ class Actor(nn.Module):
 
 		if state_shape:
 			self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
-			                                   nn.ReLU(inplace=True),
-			                                   nn.Linear(hidden_dim_state, projection_dim),
-			                                   nn.LayerNorm(projection_dim), nn.Tanh())
+											nn.ReLU(inplace=True),
+											nn.Linear(hidden_dim_state, projection_dim),
+											nn.LayerNorm(projection_dim), nn.Tanh())
 		else:
-		    self.state_encoder = None
-		
-        self.apply(orthogonal_init)
+			self.state_encoder = None
+		self.apply(orthogonal_init)
 
 	def forward(self, x, state, compute_pi=True, compute_log_pi=True):
 		x = self.trunk(x)
 
 		if self.state_encoder:
-		    x = x + self.state_encoder(state)
+			x = x + self.state_encoder(state)
 
 		mu, log_std = self.layers(x).chunk(2, dim=-1)
 		log_std = torch.tanh(log_std)
@@ -362,15 +361,15 @@ class Critic(nn.Module):
 	def __init__(self, out_dim, projection_dim, state_shape, action_shape, hidden_dim, hidden_dim_state):
 		super().__init__()
 		self.projection = nn.Sequential(nn.Linear(out_dim, projection_dim),
-								   nn.LayerNorm(projection_dim), nn.Tanh())
+								nn.LayerNorm(projection_dim), nn.Tanh())
 
 		if state_shape:
-		    self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
-		                                       nn.ReLU(inplace=True),
-		                                       nn.Linear(hidden_dim_state, projection_dim),
-		                                       nn.LayerNorm(projection_dim), nn.Tanh())
+			self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
+											nn.ReLU(inplace=True),
+											nn.Linear(hidden_dim_state, projection_dim),
+											nn.LayerNorm(projection_dim), nn.Tanh())
 		else:
-		    self.state_encoder = None
+			self.state_encoder = None
 		
 		self.Q1 = nn.Sequential(
 			nn.Linear(projection_dim + action_shape[0], hidden_dim),
@@ -391,4 +390,86 @@ class Critic(nn.Module):
 		h = torch.cat([obs, action], dim=-1)
 		return self.Q1(h), self.Q2(h)
 	
+class MultiViewEncoderModified(nn.Module):
+	"""
+	Input is the dual environment obs (active and static images already concatenated in core.py)
+	"""
+	def __init__(self, shared_cnn, head_cnn, projection, attention):
+		super().__init__()
+		self.shared_cnn = shared_cnn
+		self.head_cnn = head_cnn
+		self.projection = projection
+		self.relu = nn.ReLU()
+		self.attention = attention
 
+		self.out_dim = projection.out_dim
+
+	def forward(self, x, detach=False):
+		
+		x = self.shared_cnn(x) # Active cam
+
+		B, C, H, W = x.shape
+
+		x = self.head_cnn(x)
+
+		x = self.relu(self.attention(x, x, x))
+		
+		if detach:
+			x = x.detach()
+
+		x = self.projection(x)
+		
+		return x
+
+class CustomFeatureExtractor(BaseFeaturesExtractor):
+    """
+    :param observation_space: (gym.Space)
+    :param features_dim: (int) Number of features extracted.
+        This corresponds to the number of unit for the last layer.
+    """
+
+    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+        super(CustomFeatureExtractor, self).__init__(observation_space, features_dim)
+		
+        shared_cnn = SharedCNN(obs_shape=observation_space.shape)
+        head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
+        projection = Identity(out_dim=head.out_shape[0])
+        attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
+
+        self.output = MultiViewEncoderModified(
+            shared_cnn = shared_cnn,
+            head_cnn = head,
+            projection = projection,
+            attention= attention_block
+        )
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        return self.output(observations)
+
+
+# policy_kwargs = dict(
+#     features_extractor_class=CustomFeatureExtractor,
+#     features_extractor_kwargs=dict(features_dim=128),
+# )
+
+# Below is the bash script
+# CUDA_VISIBLE_DEVICES=0 python3 src/train.py \
+#   --algorithm sac \
+#   --domain_name robot \
+#   --task_name  reach \
+#   --episode_length 50 \
+#   --exp_suffix ours \
+#   --eval_mode none \
+#   --save_video \
+#   --eval_freq 250k \
+#   --train_steps 1000k \
+#   --save_freq 250k \
+#   --log_dir logs \
+#   --seed 99 \
+#   --cameras 2 \
+#   --action_space xy \
+#   --attention 1 \
+#   --concat 0 \
+#   --observation_type image \
+#   --context1 1 \
+#   --context2 1 \
