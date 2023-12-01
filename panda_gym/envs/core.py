@@ -405,18 +405,11 @@ class RobotCamTaskEnv(gym.Env):
         self.robot = robot
         self.task = task
         observation, _ = self.reset()  # required for init; seed can be changed later
-        observation_shape = observation["observation"].shape
-        achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
-        desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
+        observation_shape = observation.shape
      #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
-        self.observation_space = spaces.Dict(
-            dict(
-                observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
-                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
+        self.observation_space = spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8)
            #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
-            )
-        )
+
         self.action_space = self.robot.action_space
         self.compute_reward = self.task.compute_reward
         self._saved_goal = dict()  # For state saving and restoring
@@ -453,11 +446,11 @@ class RobotCamTaskEnv(gym.Env):
         #print(f'Observation shape: {observation.shape}')
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
-        current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
-        desired_goal_coords = self.task.get_goal().astype(np.float32)
-        joint_angles_required = self.robot.inverse_kinematics(
-            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
-        )[:7].astype(np.float32) # remove fingers angles
+        # current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
+        # desired_goal_coords = self.task.get_goal().astype(np.float32)
+        # joint_angles_required = self.robot.inverse_kinematics(
+        #     link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
+        # )[:7].astype(np.float32) # remove fingers angles
 
         # self.observation_space = spaces.Dict( # Try this
         #     dict(
@@ -467,12 +460,7 @@ class RobotCamTaskEnv(gym.Env):
         #     )
         # )
 
-        return {
-            "observation": observation,
-            "achieved_goal": current_joint_angles,
-            "desired_goal": joint_angles_required
-       #     "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
-        }
+        return observation
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
