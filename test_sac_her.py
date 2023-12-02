@@ -19,7 +19,7 @@ if __name__=="__main__":
                 buffer_size=600000, replay_buffer_class=ReplayBuffer,
                 policy_kwargs=dict(
                     features_extractor_class=CustomFeatureExtractor,
-                    features_extractor_kwargs=dict(features_dim=128),
+                    features_extractor_kwargs=dict(features_dim=76608), # output size of custom feature extractor
                     net_arch=[512, 512, 512], 
                     n_critics=2)
     )
