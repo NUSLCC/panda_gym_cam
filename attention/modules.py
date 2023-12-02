@@ -69,6 +69,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
+		print(f'Identity project input/output: {x.shape}')
 		return x
 
 
@@ -139,13 +140,17 @@ class AttentionBlock(nn.Module):
 		temp_shape = _get_out_shape(dim, self.attn, attn=True)
 		self.out_shape = _get_out_shape(temp_shape, nn.Flatten())
 		self.apply(orthogonal_init)
+		
+		self.dim = dim
 
 	def forward(self, query, key, value):
+		print(f'Attention block Input shape: {self.dim}')
 		x = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
 		if self.context:
 			return x
 		else:
 			x = x.flatten(start_dim=1)
+			print(f'Attention block Output shape: {x.shape}')
 			return x
 
 
@@ -164,6 +169,8 @@ class SharedCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
+		print(f'Shared CNN Input shape: {x.shape}')
+		print(f'Shared CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 
@@ -181,8 +188,11 @@ class HeadCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
+		print(f'Head CNN Input shape: {x.shape}')
+		print(f'Head CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
+		
 
 class Integrator(nn.Module):
 	def __init__(self, in_shape_1, in_shape_2, num_filters=32, concatenate=True):
@@ -433,9 +443,9 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
 		
         shared_cnn = SharedCNN(obs_shape=observation_space.shape)
         head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
-        projection = Identity(out_dim=head.out_shape[0])
         attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
-
+        projection = Identity(out_dim=head.out_shape[0])
+		
         self.output = MultiViewEncoderModified(
             shared_cnn = shared_cnn,
             head_cnn = head,
