@@ -69,7 +69,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
-		print(f'Identity project input/output: {x.shape}')
+		print(f'Identity projection input/output: {x.shape}')
 		return x
 
 
@@ -455,6 +455,66 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.output(observations)
+
+class CustomCombinedExtractor(BaseFeaturesExtractor):
+    """
+    Custom feature extractor for handling multiple inputs (image + goal info). 
+    Observation["observation"] is image data,
+    and observation["achieved_goal"] and ["desired_goal"] are joint info.
+    """
+
+    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
+        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim)
+
+        extractors = {}
+        total_concat_size = 0
+        self.output = None
+		
+        print(observation_space.spaces["observation"].shape)
+        print(observation_space.spaces["achieved_goal"].shape)
+        print(observation_space.spaces["desired_goal"].shape)
+
+        for key, subspace in observation_space.spaces.items():
+            if key == "observation": 
+				
+                shared_cnn = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
+                head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
+                attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
+                projection = Identity(out_dim=head.out_shape[0])
+                
+                self.output = MultiViewEncoderModified(
+                    shared_cnn = shared_cnn,
+                    head_cnn = head,
+                    projection = projection,
+                    attention= attention_block
+                )
+				
+                extractors[key] = self.output
+                total_concat_size += features_dim
+                print(f'Concat size: {total_concat_size}')
+            else:
+                print(f'Key is {key}') # for some reason, this entire loop is repeated 3 times 
+                extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
+                total_concat_size += 3
+                print(f'Concat size: {total_concat_size}')
+				
+        print(extractors) # this is correct 
+        
+        self.extractors = nn.ModuleDict(extractors)
+	
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+        print(f'Total concat size: {total_concat_size}')
+
+    def forward(self, observations) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        # self.extractors contain nn.Modules that do all the processing.
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
+        return torch.cat(encoded_tensor_list, dim=1)
+
 
 
 # policy_kwargs = dict(
