@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from attention.modules import CustomFeatureExtractor, CustomCombinedExtractor
+from attention.modules import CustomCombinedExtractor
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -26,7 +26,7 @@ if __name__=="__main__":
                     n_critics=2)
     )
 
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_attention_table_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_single_attention_table_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)

@@ -69,7 +69,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
-		print(f'Identity projection input/output: {x.shape}')
+		# print(f'Identity projection input/output: {x.shape}')
 		return x
 
 
@@ -144,13 +144,13 @@ class AttentionBlock(nn.Module):
 		self.dim = dim
 
 	def forward(self, query, key, value):
-		print(f'Attention block Input shape: {self.dim}')
+		# print(f'Attention block Input shape: {self.dim}')
 		x = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
 		if self.context:
 			return x
 		else:
 			x = x.flatten(start_dim=1)
-			print(f'Attention block Output shape: {x.shape}')
+			# print(f'Attention block Output shape: {x.shape}')
 			return x
 
 
@@ -169,8 +169,8 @@ class SharedCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Shared CNN Input shape: {x.shape}')
-		print(f'Shared CNN Output shape: {self.layers(x).shape}')
+		# print(f'Shared CNN Input shape: {x.shape}')
+		# print(f'Shared CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 
@@ -188,8 +188,8 @@ class HeadCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Head CNN Input shape: {x.shape}')
-		print(f'Head CNN Output shape: {self.layers(x).shape}')
+		# print(f'Head CNN Input shape: {x.shape}')
+		# print(f'Head CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 		
@@ -400,35 +400,26 @@ class Critic(nn.Module):
 		h = torch.cat([obs, action], dim=-1)
 		return self.Q1(h), self.Q2(h)
 	
-class MultiViewEncoderModified(nn.Module):
+class SingleViewEncoder(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py)
 	"""
-	def __init__(self, shared_cnn, head_cnn, projection, attention):
+	def __init__(self, shared_cnn, head_cnn, projection, attention=None):
 		super().__init__()
 		self.shared_cnn = shared_cnn
 		self.head_cnn = head_cnn
 		self.projection = projection
 		self.relu = nn.ReLU()
 		self.attention = attention
-
 		self.out_dim = projection.out_dim
 
 	def forward(self, x, detach=False):
-		
-		x = self.shared_cnn(x) # Active cam
-
-		B, C, H, W = x.shape
-
+		x = self.shared_cnn(x)
 		x = self.head_cnn(x)
-
 		x = self.relu(self.attention(x, x, x))
-		
 		if detach:
 			x = x.detach()
-
 		x = self.projection(x)
-		
 		return x
 
 class CustomFeatureExtractor(BaseFeaturesExtractor):
@@ -446,7 +437,7 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
         attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
         projection = Identity(out_dim=head.out_shape[0])
 		
-        self.output = MultiViewEncoderModified(
+        self.output = Encoder(
             shared_cnn = shared_cnn,
             head_cnn = head,
             projection = projection,
@@ -475,10 +466,10 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
 				
                 shared_cnn = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
                 head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
-                attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
                 projection = Identity(out_dim=head.out_shape[0])
+                attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
                 
-                self.output = MultiViewEncoderModified(
+                self.output = SingleViewEncoder(
                     shared_cnn = shared_cnn,
                     head_cnn = head,
                     projection = projection,
@@ -491,7 +482,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
                 total_concat_size += 3
 				
-      #  print(extractors) # disable comment to see architecture here
+      	# print(extractors) # disable comment to see architecture here
         
         self.extractors = nn.ModuleDict(extractors)
 	
