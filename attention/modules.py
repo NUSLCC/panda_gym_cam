@@ -69,7 +69,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
-		print(f'Identity project input/output: {x.shape}')
+	#	print(f'Identity project input/output: {x.shape}')
 		return x
 
 
@@ -144,13 +144,13 @@ class AttentionBlock(nn.Module):
 		self.dim = dim
 
 	def forward(self, query, key, value):
-		print(f'Attention block Input shape: {self.dim}')
+	#	print(f'Attention block Input shape: {self.dim}')
 		x = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
 		if self.context:
 			return x
 		else:
 			x = x.flatten(start_dim=1)
-			print(f'Attention block Output shape: {x.shape}')
+	#		print(f'Attention block Output shape: {x.shape}')
 			return x
 
 
@@ -169,8 +169,8 @@ class SharedCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Shared CNN Input shape: {x.shape}')
-		print(f'Shared CNN Output shape: {self.layers(x).shape}')
+	#	print(f'Shared CNN Input shape: {x.shape}')
+	#	print(f'Shared CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 
@@ -188,8 +188,8 @@ class HeadCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Head CNN Input shape: {x.shape}')
-		print(f'Head CNN Output shape: {self.layers(x).shape}')
+	#	print(f'Head CNN Input shape: {x.shape}')
+	#	print(f'Head CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 		
@@ -416,7 +416,7 @@ class MultiViewEncoderModified(nn.Module):
 
 	def forward(self, x, detach=False):
 		
-		x = self.shared_cnn(x) # Active cam
+		x = self.shared_cnn(x) 
 
 		B, C, H, W = x.shape
 
