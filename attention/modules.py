@@ -464,7 +464,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
     """
 
     def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
-        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim)
+        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim = 1)
 
         extractors = {}
         total_concat_size = 0
