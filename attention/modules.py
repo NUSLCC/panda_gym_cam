@@ -469,10 +469,6 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         extractors = {}
         total_concat_size = 0
         self.output = None
-		
-        print(observation_space.spaces["observation"].shape)
-        print(observation_space.spaces["achieved_goal"].shape)
-        print(observation_space.spaces["desired_goal"].shape)
 
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
@@ -491,20 +487,16 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
 				
                 extractors[key] = self.output
                 total_concat_size += features_dim
-                print(f'Concat size: {total_concat_size}')
             else:
-                print(f'Key is {key}') # for some reason, this entire loop is repeated 3 times 
                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
                 total_concat_size += 3
-                print(f'Concat size: {total_concat_size}')
 				
-        print(extractors) # this is correct 
+      #  print(extractors) # disable comment to see architecture here
         
         self.extractors = nn.ModuleDict(extractors)
 	
         # Update the features dim manually
         self._features_dim = total_concat_size
-        print(f'Total concat size: {total_concat_size}')
 
     def forward(self, observations) -> torch.Tensor:
         encoded_tensor_list = []
