@@ -437,15 +437,15 @@ class RobotCamTaskEnv(gym.Env):
                 yaw=self.render_yaw,
                 pitch=self.render_pitch,
             )
-
+    
     def _get_obs(
             self, 
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
-       # task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
+        #robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
+        task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
-        observation = robot_obs
+        observation = task_obs
 
         #print(f'Observation shape: {observation.shape}')
 

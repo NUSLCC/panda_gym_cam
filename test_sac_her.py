@@ -16,7 +16,7 @@ if __name__=="__main__":
 
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=128, gamma=0.95, learning_rate=1e-4, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1000,
-                buffer_size=600000, replay_buffer_class=DictReplayBuffer,
+                buffer_size=600000, replay_buffer_class=DictReplayBuffer, device= "cuda:0", 
                 # Parameters for SAC
                 policy_kwargs=dict(
                     features_extractor_class=CustomCombinedExtractor,
