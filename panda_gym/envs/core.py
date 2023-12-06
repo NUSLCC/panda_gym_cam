@@ -408,13 +408,11 @@ class RobotCamTaskEnv(gym.Env):
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
-     #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
                 achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
                 desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-           #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
             )
         )    
         self.action_space = self.robot.action_space
@@ -442,32 +440,20 @@ class RobotCamTaskEnv(gym.Env):
             self, 
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
-        #robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
-        task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
-        # observation = robot_obs
+        # robot_obs = self.robot.get_obs().astype(np.uint8)  # robot cam
+        task_obs = self.task.get_obs().astype(np.uint8)  # static cam
         observation = task_obs
-
-        #print(f'Observation shape: {observation.shape}')
-
-      #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
-        joint_angles_required = self.robot.inverse_kinematics(
-            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
-        )[:7].astype(np.float32) # remove fingers angles
-
-        # self.observation_space = spaces.Dict( # Try this
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation.shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=current_joint_angles.shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=joint_angles_required.shape, dtype=np.float32) 
-        #     )
-        # )
+        desired_joint_angles = self.robot.inverse_kinematics(
+            link=self.robot.ee_link, 
+            position=desired_goal_coords, 
+            orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(np.float32) # remove fingers angles
 
         return {
             "observation": observation,
             "achieved_goal": current_joint_angles,
-            "desired_goal": joint_angles_required
+            "desired_goal": desired_joint_angles
         }
 
     def reset(

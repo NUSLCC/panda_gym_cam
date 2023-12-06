@@ -109,24 +109,24 @@ class RandomShiftsAug(nn.Module):
 
 
 class SelfAttention(nn.Module):
-    def __init__(self, in_channels):
-        super().__init__()
-        self.conv_query = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
-        self.conv_key = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
-        self.conv_value = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
-        self.in_channels = in_channels
+	def __init__(self, in_channels):
+		super().__init__()
+		self.conv_query = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
+		self.conv_key = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
+		self.conv_value = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
+		self.in_channels = in_channels
 
-    def forward(self, query, key, value):
-        N, C, H, W = query.shape
-        assert query.shape == key.shape == value.shape, "Key, query and value inputs must be of the same dimensions in this implementation"
-        q = self.conv_query(query).reshape(N, C, H*W)#.permute(0, 2, 1)
-        k = self.conv_key(key).reshape(N, C, H*W)#.permute(0, 2, 1)
-        v = self.conv_value(value).reshape(N, C, H*W)#.permute(0, 2, 1)
-        attention = k.transpose(1, 2)@q / C**0.5
-        attention = attention.softmax(dim=1)
-        output = v@attention
-        output = output.reshape(N, C, H, W)
-        return query + output # Add with query and output
+	def forward(self, query, key, value):
+		N, C, H, W = query.shape
+		assert query.shape == key.shape == value.shape, "Key, query and value inputs must be of the same dimensions in this implementation"
+		q = self.conv_query(query).reshape(N, C, H*W)#.permute(0, 2, 1)
+		k = self.conv_key(key).reshape(N, C, H*W)#.permute(0, 2, 1)
+		v = self.conv_value(value).reshape(N, C, H*W)#.permute(0, 2, 1)
+		attention = k.transpose(1, 2)@q / C**0.5
+		attention = attention.softmax(dim=1)
+		output = v@attention
+		output = output.reshape(N, C, H, W)
+		return query + output # Add with query and output
 
 
 class AttentionBlock(nn.Module):
@@ -169,9 +169,12 @@ class SharedCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
+		# print("SharedCNN before shape", x.shape)
 		# print(f'Shared CNN Input shape: {x.shape}')
 		# print(f'Shared CNN Output shape: {self.layers(x).shape}')
-		return self.layers(x)
+		result = self.layers(x)
+		# print("SharedCNN after shape", result.shape)
+		return result
 
 
 class HeadCNN(nn.Module):
@@ -188,14 +191,17 @@ class HeadCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
+		# print("HeadCNN before shape", x.shape)
 		# print(f'Head CNN Input shape: {x.shape}')
 		# print(f'Head CNN Output shape: {self.layers(x).shape}')
-		return self.layers(x)
+		result = self.layers(x)
+		# print("HeadCNN before shape", result.shape)
+		return result
 
 		
 
 class Integrator(nn.Module):
-	def __init__(self, in_shape_1, in_shape_2, num_filters=32, concatenate=True):
+	def __init__(self, in_shape_1, in_shape_2, num_filters=3, concatenate=True):
 		super().__init__()
 		self.relu = nn.ReLU()
 		if concatenate:
@@ -219,37 +225,39 @@ class Encoder(nn.Module):
 		self.out_dim = projection.out_dim
 
 	def forward(self, x, detach=False):
+		# print("Encoder before shape", x.shape)
 		x = self.shared_cnn(x)
 		x = self.head_cnn(x)
 		if detach:
 			x = x.detach()
 		x = self.projection(x)
+		# print("Encoder after shape", x.shape)
 		return x
 		
 class Mlp(nn.Module):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
-        super().__init__()
-        out_features = out_features or in_features
-        hidden_features = hidden_features or in_features
-        self.fc1 = nn.Linear(in_features, hidden_features)
-        self.act = act_layer()
-        self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop = nn.Dropout(drop)
-        self.apply(orthogonal_init)
+	def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+		super().__init__()
+		out_features = out_features or in_features
+		hidden_features = hidden_features or in_features
+		self.fc1 = nn.Linear(in_features, hidden_features)
+		self.act = act_layer()
+		self.fc2 = nn.Linear(hidden_features, out_features)
+		self.drop = nn.Dropout(drop)
+		self.apply(orthogonal_init)
 
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.act(x)
-        x = self.drop(x)
-        x = self.fc2(x)
-        x = self.drop(x)
-        return x
+	def forward(self, x):
+		x = self.fc1(x)
+		x = self.act(x)
+		x = self.drop(x)
+		x = self.fc2(x)
+		x = self.drop(x)
+		return x
 
-    def _init_weights(self):
-        nn.init.xavier_uniform_(self.fc1.weight)
-        nn.init.xavier_uniform_(self.fc2.weight)
-        nn.init.normal_(self.fc1.bias, std=1e-6)
-        nn.init.normal_(self.fc2.bias, std=1e-6)
+	def _init_weights(self):
+		nn.init.xavier_uniform_(self.fc1.weight)
+		nn.init.xavier_uniform_(self.fc2.weight)
+		nn.init.normal_(self.fc1.bias, std=1e-6)
+		nn.init.normal_(self.fc2.bias, std=1e-6)
 
 class MultiViewEncoder(nn.Module):
 	def __init__(self, shared_cnn_1, shared_cnn_2, integrator, head_cnn, projection, attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None, concatenate=True, contextualReasoning1=False, contextualReasoning2=False):
@@ -423,82 +431,79 @@ class SingleViewEncoder(nn.Module):
 		return x
 
 class CustomFeatureExtractor(BaseFeaturesExtractor):
-    """
-    :param observation_space: (gym.Space)
-    :param features_dim: (int) Number of features extracted.
-        This corresponds to the number of unit for the last layer.
-    """
+	"""
+	Custom feature extractor for handling obs (visual inputs solely). 
+	:param observation_space: (gym.Space)
+	:param features_dim: (int) Number of features extracted.
+		This corresponds to the number of unit for the last layer.
+	"""
+	def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 1):
+		super().__init__(observation_space, features_dim)
+		self.shared = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
+		self.head = HeadCNN(in_shape=self.shared.out_shape, flatten=False)
+		self.attention_block = AttentionBlock(dim=self.head.out_shape, contextualReasoning=False)
+		self.projection = Identity(out_dim=self.head.out_shape[0])
+		self.encoder = Encoder(shared_cnn = self.shared, head_cnn = self.head, projection = self.projection, attention= self.attention_block)
+		self.out_dim = self.encoder.out_dim
 
-    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
-        super(CustomFeatureExtractor, self).__init__(observation_space, features_dim)
+	def forward(self, observations: torch.Tensor) -> torch.Tensor:
+		# print("encoder input shape", (observations["observation"]).shape)
+		result = self.encoder(observations["observation"])
+		result = result.reshape(result.shape[0], -1)
+		# print("encoder forwarded shape", result.shape)
+		return result
+
+# class CustomCombinedExtractor(BaseFeaturesExtractor):
+#     """
+# 		Custom feature extractor for handling multiple inputs (image + goal info). 
+# 		observation["observation"] is image data,
+# 		observation["achieved_goal"] is joint data,
+# 		observation["desired_goal"] is joint data.
+#     """
+
+#     def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 256):
+#         super().__init__(observation_space, features_dim)
+
+#         extractors = {}
+#         total_concat_size = 0
+#         self.output = None
+
+#         for key, value in observation_space.spaces.items():
+#             if key == "observation": 
+				
+#                 shared_cnn = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
+#                 head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
+#                 projection = Identity(out_dim=head.out_shape[0])
+#                 attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
+				
+#                 self.output = SingleViewEncoder(
+#                     shared_cnn = shared_cnn,
+#                     head_cnn = head,
+#                     projection = projection,
+#                     attention= attention_block
+#                 )
+				
+#                 extractors[key] = self.output
+#                 total_concat_size += features_dim
+#             else:
+#                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
+#                 total_concat_size += 3
+				
+#       	# print(extractors) # disable comment to see architecture here
 		
-        shared_cnn = SharedCNN(obs_shape=observation_space.shape)
-        head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
-        attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
-        projection = Identity(out_dim=head.out_shape[0])
-		
-        self.output = Encoder(
-            shared_cnn = shared_cnn,
-            head_cnn = head,
-            projection = projection,
-            attention= attention_block
-        )
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        return self.output(observations)
-
-class CustomCombinedExtractor(BaseFeaturesExtractor):
-    """
-    Custom feature extractor for handling multiple inputs (image + goal info). 
-    Observation["observation"] is image data,
-    and observation["achieved_goal"] and ["desired_goal"] are joint info.
-    """
-
-    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
-        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim = 1)
-
-        extractors = {}
-        total_concat_size = 0
-        self.output = None
-
-        for key, subspace in observation_space.spaces.items():
-            if key == "observation": 
-				
-                shared_cnn = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
-                head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
-                projection = Identity(out_dim=head.out_shape[0])
-                attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
-                
-                self.output = SingleViewEncoder(
-                    shared_cnn = shared_cnn,
-                    head_cnn = head,
-                    projection = projection,
-                    attention= attention_block
-                )
-				
-                extractors[key] = self.output
-                total_concat_size += features_dim
-            else:
-                extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
-                total_concat_size += 3
-				
-      	# print(extractors) # disable comment to see architecture here
-        
-        self.extractors = nn.ModuleDict(extractors)
+#         self.extractors = nn.ModuleDict(extractors)
 	
-        # Update the features dim manually
-        self._features_dim = total_concat_size
+#         # Update the features dim manually
+#         self._features_dim = total_concat_size
 
-    def forward(self, observations) -> torch.Tensor:
-        encoded_tensor_list = []
+#     def forward(self, observations) -> torch.Tensor:
+#         encoded_tensor_list = []
 
-        # self.extractors contain nn.Modules that do all the processing.
-        for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key]))
-        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
-        return torch.cat(encoded_tensor_list, dim=1)
-
-
+#         # self.extractors contain nn.Modules that do all the processing.
+#         for key, extractor in self.extractors.items():
+#             encoded_tensor_list.append(extractor(observations[key]))
+#         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
+#         return torch.cat(encoded_tensor_list, dim=1)
 
 # policy_kwargs = dict(
 #     features_extractor_class=CustomFeatureExtractor,

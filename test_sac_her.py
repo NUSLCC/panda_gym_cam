@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from attention.modules import CustomCombinedExtractor
+from attention.modules import CustomFeatureExtractor
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -19,9 +19,9 @@ if __name__=="__main__":
                 buffer_size=600000, replay_buffer_class=DictReplayBuffer, device= "cuda:0", 
                 # Parameters for SAC
                 policy_kwargs=dict(
-                    features_extractor_class=CustomCombinedExtractor,
+                    features_extractor_class=CustomFeatureExtractor,
                     # output size of custom combined extractor = image features + achieved goal + desired goal. e.g. Identity projection output is torch.Size([16, 30528]. So 30528+3+3 = 30536 
-                    features_extractor_kwargs=dict(features_dim=30536), 
+                    features_extractor_kwargs=dict(features_dim=30528), 
                     net_arch=[512, 512, 512], 
                     n_critics=2)
     )
