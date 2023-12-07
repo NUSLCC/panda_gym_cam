@@ -7,8 +7,6 @@ from gymnasium import spaces
 from gymnasium.utils import seeding
 
 from panda_gym.pybullet import PyBullet
-from panda_gym.utils import SimpleCNN
-from panda_gym.utils import UnidirectionalAttentionModule
 
 class PyBulletRobot(ABC):
     """Base class for robot env.
@@ -429,11 +427,6 @@ class RobotCamTaskEnv(gym.Env):
         self.render_yaw = render_yaw
         self.render_pitch = render_pitch
         self.render_roll = render_roll
-        self.simplecnn_module = SimpleCNN(3, 3)
-        self.num_channels = 3
-        self.num_heads = 3
-        self.num_blocks = 1
-        self.unidirectional_attention_module = UnidirectionalAttentionModule(self.num_channels, self.num_heads, self.num_blocks)
         with self.sim.no_rendering():
             self.sim.place_visualizer(
                 target_position=self.render_target_position,
@@ -448,11 +441,7 @@ class RobotCamTaskEnv(gym.Env):
             ) -> Dict[str, np.ndarray]:
         robot_obs = self.robot.get_obs().astype(np.uint8)  # active camera
         task_obs = self.task.get_obs().astype(np.uint8)  # static camera
-        local_source = self.simplecnn_module(robot_obs.float())
-        global_source = self.simplecnn_module(task_obs.float())
-        output_local = self.unidirectional_attention_module(local_source.float(), global_source.float())
-        #observation = np.concatenate([robot_obs, task_obs])
-        observation = output_local
+        observation = np.concatenate([robot_obs, task_obs])
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
         desired_joint_angles = self.robot.inverse_kinematics(
