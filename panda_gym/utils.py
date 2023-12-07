@@ -8,8 +8,55 @@ from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
-from mae import models_mae
-from mae.util import pos_embed
+# from mae import models_mae
+# from mae.util import pos_embed
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SimpleCNN(nn.Module):
+    def __init__(self, in_channels, out_channels, inside_channels=32, num_layers=1):
+        super(SimpleCNN, self).__init__()
+
+        self.layers = [nn.Conv2d(in_channels, inside_channels, kernel_size=3, stride=1, padding=1), nn.ReLU(inplace=True)]
+        for _ in range(0, num_layers):
+            self.layers.append(nn.Conv2d(inside_channels, inside_channels, kernel_size=3, stride=1, padding=1))
+            self.layers.append(nn.ReLU(inplace=True))
+        self.layers.append(nn.Conv2d(inside_channels, out_channels, kernel_size=3, stride=1, padding=1))
+        self.layers.append(nn.ReLU(inplace=True))
+        self.features = nn.Sequential(*self.layers)
+
+    def forward(self, x):
+        x = self.features(x)
+        return x
+
+
+class UnidirectionalAttentionModule(nn.Module):
+    def __init__(self, num_channels, num_heads, num_blocks):
+        super(UnidirectionalAttentionModule, self).__init__()
+        self.embedding_size = num_channels*num_heads
+        self.num_heads = num_heads
+        self.num_blocks = num_blocks
+        self.local_to_global_attention_blocks = nn.ModuleList(
+            [nn.MultiheadAttention(self.embedding_size, self.num_heads) for _ in range(self.num_blocks)])
+
+    def forward(self, local_source, global_source):
+        batch_size, num_channels, height, width = local_source.size()
+        assert (height*width) % self.num_heads == 0
+        self.sequence_length = int(height * width / self.num_heads)
+        # Reshape the image tensors for attention (flatten spatial dimensions)
+        local_source_flat = local_source.reshape(batch_size, self.sequence_length, self.embedding_size).permute(1, 0, 2)
+        global_source_flat = global_source.reshape(batch_size, self.sequence_length, self.embedding_size).permute(1, 0, 2)
+
+        # Local source attending to global source
+        for attn_block in self.local_to_global_attention_blocks:
+            attn_output, _ = attn_block(local_source_flat, global_source_flat, global_source_flat)
+            local_source_flat = F.layer_norm(attn_output + local_source_flat, normalized_shape=[self.embedding_size])
+
+        # Reshape the flattened tensors back to the original image shape
+        local_source_out = local_source_flat.permute(1, 0, 2).reshape(batch_size, num_channels, height, width)
+        return local_source_out
+
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
@@ -238,34 +285,34 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     plt.show()
     return jittered_img
 
-def masked_auto_encoder(img):
-    """
-    Applies MAE to the input image
-    Args:
-        RGB image (np.ndarray) of shape of W, H, C.
-    Returns:
-        RGB image (np.ndarray) which includes the reconstruction of decoder of shape of W, H, C.
-    """
-    imagenet_mean = np.array([0.485, 0.456, 0.406])
-    imagenet_std = np.array([0.229, 0.224, 0.225])
+# def masked_auto_encoder(img):
+#     """
+#     Applies MAE to the input image
+#     Args:
+#         RGB image (np.ndarray) of shape of W, H, C.
+#     Returns:
+#         RGB image (np.ndarray) which includes the reconstruction of decoder of shape of W, H, C.
+#     """
+#     imagenet_mean = np.array([0.485, 0.456, 0.406])
+#     imagenet_std = np.array([0.229, 0.224, 0.225])
     
-    img = np.array(img).reshape(224,400,3)
+#     img = np.array(img).reshape(224,400,3)
 
-    img = Image.fromarray(img).resize((224, 224))
-    img = np.array(img) / 255.
+#     img = Image.fromarray(img).resize((224, 224))
+#     img = np.array(img) / 255.
 
-    # normalize by ImageNet mean and std
-    img = img - imagenet_mean
-    img = img / imagenet_std
+#     # normalize by ImageNet mean and std
+#     img = img - imagenet_mean
+#     img = img / imagenet_std
 
-    plt.rcParams['figure.figsize'] = [5, 5]
-    show_image(torch.tensor(img))
+#     plt.rcParams['figure.figsize'] = [5, 5]
+#     show_image(torch.tensor(img))
 
-    chkpt_dir = 'mae/mae_visualize_vit_large_ganloss.pth'
-    model_mae_gan = prepare_model(chkpt_dir, 'mae_vit_large_patch16')
+#     chkpt_dir = 'mae/mae_visualize_vit_large_ganloss.pth'
+#     model_mae_gan = prepare_model(chkpt_dir, 'mae_vit_large_patch16')
 
-    print('MAE with extra GAN loss:')
-    run_one_image(img, model_mae_gan)
+#     print('MAE with extra GAN loss:')
+#     run_one_image(img, model_mae_gan)
 
 
 def show_image(image,title=''):
@@ -279,14 +326,14 @@ def show_image(image,title=''):
     plt.axis('off')
     return
 
-def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
-    # build model
-    model = getattr(models_mae, arch)()
-    # load model
-    checkpoint = torch.load(chkpt_dir, map_location='cpu')
-    msg = model.load_state_dict(checkpoint['model'], strict=False)
-    print(msg)
-    return model
+# def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
+#     # build model
+#     model = getattr(models_mae, arch)()
+#     # load model
+#     checkpoint = torch.load(chkpt_dir, map_location='cpu')
+#     msg = model.load_state_dict(checkpoint['model'], strict=False)
+#     print(msg)
+#     return model
 
 def run_one_image(img, model):
     imagenet_mean = np.array([0.485, 0.456, 0.406])

@@ -7,13 +7,7 @@ import matplotlib.pyplot as plt
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
-from panda_gym.utils import calculate_object_range
-from panda_gym.utils import generate_object_range
 from panda_gym.utils import generate_semicircle_object_range
-from panda_gym.utils import colorjitter
-from panda_gym.utils import masked_auto_encoder
-from panda_gym.utils import velocity_calculator
-from panda_gym.utils import sine_velocity
 
 class ReachCam(Task):
     def __init__(
