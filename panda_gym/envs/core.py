@@ -443,11 +443,13 @@ class RobotCamTaskEnv(gym.Env):
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
         robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
-       # task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
+        task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
-        observation = robot_obs
-
-        #print(f'Observation shape: {observation.shape}')
+        if object_in_cam: # pass in both active and static camera img
+            observation = np.concatenate([robot_obs, task_obs])
+        else: # only pass in static cam
+            robot_obs = np.zeros_like(task_obs).astype(np.uint8)
+            observation = np.concatenate([robot_obs, task_obs])
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)

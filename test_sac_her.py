@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from attention.modules import CustomFeatureExtractor, CustomCombinedExtractor
+from attention.modules import CustomFeatureExtractor, CustomCombinedExtractorCrossAttention
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -19,7 +19,7 @@ if __name__=="__main__":
                 buffer_size=600000, replay_buffer_class=DictReplayBuffer,
                 # Parameters for SAC
                 policy_kwargs=dict(
-                    features_extractor_class=CustomCombinedExtractor,
+                    features_extractor_class=CustomCombinedExtractorCrossAttention,
                     # output size of custom combined extractor = image features + achieved goal + desired goal. e.g. Identity projection output is torch.Size([16, 30528]. So 30528+3+3 = 30536 
                     features_extractor_kwargs=dict(features_dim=30536), 
                     net_arch=[512, 512, 512], 
@@ -32,4 +32,4 @@ if __name__=="__main__":
     model.set_logger(new_logger)
 
     model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_single_attention_panda")
+    model.save("sac_cross_attention_panda")
