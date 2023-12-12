@@ -280,10 +280,13 @@ def colorjitter(img, brightness, contrast, saturation, hue):
 def mask_image(img, mask_ratio=0.25):
     """
     Mask out a percentage of the image.
-    image: [W,H, 3], RGB image
-    mask_ratio: Percentage of the image to be masked (default is 25%)
+    Args:
+        RGB image (np.ndarray) of either active-view or passive-view camera. Shape of W, H, C.
+        Mask_ratio (float): Percentage of the image to be masked (default is 25%)
+    Returns:
+        RGB image (np.ndarray) that is masked out (black). Shape of W, H, C.
     """
-    H, W, _ = img.shape
+    W, H, _ = img.shape
     num_masked_pixels = int(mask_ratio * H * W)
 
     # Generate random indices to mask
@@ -291,21 +294,23 @@ def mask_image(img, mask_ratio=0.25):
 
     # Create a binary mask
     mask = np.ones(H * W)
+    mask = mask.reshape(-1)
     mask[masked_indices] = 0
-    mask = mask.reshape((W, H))
+    mask = mask.reshape((W,H))
+    mask_3d = np.repeat(mask[:, :, np.newaxis], 3, axis=2)
 
     # Apply the mask to each channel
-    masked_image = img * mask[:, :, np.newaxis]
+    masked_image = img * mask_3d
 
     img = np.array(img).astype(np.uint8)
     masked_image = np.array(masked_image).astype(np.uint8)
 
-    fig, axes = plt.subplots(1, 2)
-    axes[0].imshow(img)
-    axes[0].set_title('Original image')
-    axes[1].imshow(masked_image)
-    axes[1].set_title('Masked image')
-    plt.show()
+    # fig, axes = plt.subplots(1, 2)
+    # axes[0].imshow(img.reshape(90,160,3))
+    # axes[0].set_title('Original image')
+    # axes[1].imshow(masked_image.reshape(90,160,3))
+    # axes[1].set_title('Masked image')
+    # plt.show()
 
     return masked_image
 
