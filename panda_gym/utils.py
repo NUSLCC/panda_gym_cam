@@ -262,6 +262,7 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     Returns:
         RGB image (np.ndarray) that has brightness, contrast, saturation and hue jittered. Shape of W, H, C.
     """
+    H, W, _ = img.shape
     img = np.array(img).astype(np.uint8).transpose(1, 0, 2)
     pil_img = Image.fromarray(img)
     color_jitter = transforms.ColorJitter(
@@ -269,12 +270,14 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     )
     pil_img = color_jitter(pil_img)
     jittered_img = np.asarray(pil_img).astype(np.uint8).transpose(1, 0, 2)
+
     # fig, axes = plt.subplots(1, 2)
-    # axes[0].imshow(org_img.reshape(224, 400, 3))
+    # axes[0].imshow(img.reshape(H, W, 3))
     # axes[0].set_title('Original image')
-    # axes[1].imshow(jittered_img.reshape(224, 400, 3))
+    # axes[1].imshow(jittered_img.reshape(H, W, 3))
     # axes[1].set_title('Jittered image')
     # plt.show()
+
     return jittered_img
 
 def mask_image(img, mask_ratio=0.25):
@@ -321,7 +324,25 @@ def resize_image(img, width=160, height=90):
     Returns:
         RGB image (np.ndarray of shape width, height, channels)
     """
-    return cv2.resize(img, (width, height), interpolation = cv2.INTER_AREA)
+    W, H, _ = img.shape
+    img = img.reshape(H,W,3)
+    resized_image = cv2.resize(img, (width, height), interpolation = cv2.INTER_AREA)
+
+    # img = np.array(img).astype(np.uint8)
+    # resized_image = np.array(resized_image).astype(np.uint8)
+    # fig, axes = plt.subplots(1, 2)
+    # axes[0].imshow(img)
+    # axes[0].set_title('Original image')
+    # axes[1].imshow(resized_image)
+    # axes[1].set_title('Resized image')
+    # plt.show()
+
+    resized_image = resized_image.reshape(width,height,3) 
+
+    # print(f"Resized img shape: {resized_image.shape}")
+
+    return resized_image
+
 
 def masked_auto_encoder(img):
     """
