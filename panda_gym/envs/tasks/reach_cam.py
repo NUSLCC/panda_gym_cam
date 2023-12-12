@@ -121,8 +121,9 @@ class ReachCam(Task):
 
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam()
+        resized_img = resize_image(np.array(rgb_img).astype(np.uint8))
         jittered_img = colorjitter(
-            rgb_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
+            resized_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
         )
         final_img = mask_image(jittered_img)
         return final_img
@@ -138,8 +139,8 @@ class ReachCam(Task):
         self,
         # cam_width: int = 400,
         # cam_height: int = 224,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 480,
+        cam_height: int = 270,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
