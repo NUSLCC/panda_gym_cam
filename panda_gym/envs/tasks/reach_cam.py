@@ -124,7 +124,7 @@ class ReachCam(Task):
         jittered_img = colorjitter(
             rgb_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
         )
-        final_img = resize_image(jittered_img)
+        final_img = mask_image(jittered_img)
         return final_img
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
@@ -138,8 +138,8 @@ class ReachCam(Task):
         self,
         # cam_width: int = 400,
         # cam_height: int = 224,
-        cam_width: int = 1280,
-        cam_height: int = 720,
+        cam_width: int = 160,
+        cam_height: int = 90,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm

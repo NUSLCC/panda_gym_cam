@@ -11,6 +11,7 @@ from panda_gym.pybullet import PyBullet
 from panda_gym.utils import color_threshold_pixel_counter
 from panda_gym.utils import colorjitter
 from panda_gym.utils import resize_image
+from panda_gym.utils import mask_image
 
 
 class PandaCam(PyBulletRobot):
@@ -118,13 +119,13 @@ class PandaCam(PyBulletRobot):
         jittered_img = colorjitter(
             rgb_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
         )
-        final_img = resize_image(jittered_img)
+        final_img = mask_image(jittered_img)
         return final_img
 
     def render_from_robot_cam(
         self,
-        cam_width: int = 1280,
-        cam_height: int = 720,
+        cam_width: int = 160,
+        cam_height: int = 90,
     ) -> Optional[np.ndarray]:
         """
         Camera fixed to the panda robot arm
