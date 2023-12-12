@@ -14,7 +14,8 @@ from panda_gym.utils import colorjitter
 from panda_gym.utils import masked_auto_encoder
 from panda_gym.utils import velocity_calculator
 from panda_gym.utils import sine_velocity
-
+from panda_gym.utils import mask_image
+from panda_gym.utils import resize_image
 
 class ReachCam(Task):
     def __init__(
@@ -123,7 +124,8 @@ class ReachCam(Task):
         jittered_img = colorjitter(
             rgb_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
         )
-        return jittered_img
+        final_img = resize_image(jittered_img)
+        return final_img
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
         # target_position = self.sim.get_base_position("target")
@@ -136,8 +138,8 @@ class ReachCam(Task):
         self,
         # cam_width: int = 400,
         # cam_height: int = 224,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 1280,
+        cam_height: int = 720,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
