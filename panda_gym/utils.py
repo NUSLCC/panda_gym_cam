@@ -262,7 +262,6 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     Returns:
         RGB image (np.ndarray) that has brightness, contrast, saturation and hue jittered. Shape of W, H, C.
     """
-    org_img = np.array(img).astype(np.uint8)
     img = np.array(img).astype(np.uint8).transpose(1, 0, 2)
     pil_img = Image.fromarray(img)
     color_jitter = transforms.ColorJitter(
