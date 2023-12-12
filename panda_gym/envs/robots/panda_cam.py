@@ -9,7 +9,6 @@ from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
 from panda_gym.utils import color_threshold_pixel_counter
-from panda_gym.utils import colorjitter
 from panda_gym.utils import resize_image
 from panda_gym.utils import mask_image
 
@@ -117,10 +116,7 @@ class PandaCam(PyBulletRobot):
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_robot_cam()
         resized_img = resize_image(np.array(rgb_img).astype(np.uint8))
-        jittered_img = colorjitter(
-            resized_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
-        )
-        final_img = mask_image(jittered_img)
+        final_img = mask_image(resized_img)
         return final_img
 
     def render_from_robot_cam(

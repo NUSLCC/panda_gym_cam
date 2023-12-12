@@ -7,13 +7,8 @@ import matplotlib.pyplot as plt
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
-from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
 from panda_gym.utils import sample_object_obstacle_goal
-from panda_gym.utils import colorjitter
-from panda_gym.utils import masked_auto_encoder
-from panda_gym.utils import velocity_calculator
-from panda_gym.utils import sine_velocity
 
 class ReachCamObstacle(Task):
     def __init__(
@@ -133,7 +128,6 @@ class ReachCamObstacle(Task):
 
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam() 
-        # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
 
