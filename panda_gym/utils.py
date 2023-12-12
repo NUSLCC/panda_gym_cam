@@ -278,6 +278,46 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     # plt.show()
     return jittered_img
 
+def mask_image(img, mask_ratio=0.25):
+    """
+    Mask out a percentage of the image.
+    image: [W,H, 3], RGB image
+    mask_ratio: Percentage of the image to be masked (default is 25%)
+    """
+    H, W, _ = img.shape
+    num_masked_pixels = int(mask_ratio * H * W)
+
+    # Generate random indices to mask
+    masked_indices = np.random.choice(H * W, num_masked_pixels, replace=False)
+
+    # Create a binary mask
+    mask = np.ones(H * W)
+    mask[masked_indices] = 0
+    mask = mask.reshape((W, H))
+
+    # Apply the mask to each channel
+    masked_image = img * mask[:, :, np.newaxis]
+
+    img = np.array(img).astype(np.uint8)
+    masked_image = np.array(masked_image).astype(np.uint8)
+
+    fig, axes = plt.subplots(1, 2)
+    axes[0].imshow(img)
+    axes[0].set_title('Original image')
+    axes[1].imshow(masked_image)
+    axes[1].set_title('Masked image')
+    plt.show()
+
+    return masked_image
+
+def resize_image(img, width=160, height=90):
+    """Resize image into width x height
+    Args:
+        RGB image (np.ndarray)
+    Returns:
+        RGB image (np.ndarray of shape width, height, channels)
+    """
+    return cv2.resize(img, (width, height), interpolation = cv2.INTER_AREA)
 
 def masked_auto_encoder(img):
     """
