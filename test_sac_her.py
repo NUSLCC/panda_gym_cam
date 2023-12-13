@@ -27,4 +27,4 @@ if __name__=="__main__":
     model.set_logger(new_logger)
 
     model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_her_panda")
+    model.save("sac_her_panda_only_jitter")
