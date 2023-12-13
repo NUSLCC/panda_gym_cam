@@ -457,6 +457,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 
 	def forward(self, x1, x2, detach=False):
 		
+		x1_org = x1
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
 
@@ -467,7 +468,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		x1 = x1.view(B, C, -1).permute(0, 2, 1)
 		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
 
-		x2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
+		x2 = self.attention2(x2, x1_org, x1_org) # Contextual reasoning on 1st person image based on 3rd person image
 		x2 = self.norm2(x2)
 		x2 = x2.view(B, C, -1).permute(0, 2, 1)
 		x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
