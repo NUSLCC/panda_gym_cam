@@ -444,7 +444,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		self.projection = projection
 		self.relu = nn.ReLU()
 		self.attention1 = attention1
-		self.attention2 = attnetion2
+		self.attention2 = attention2
 
 		self.out_dim = projection.out_dim
 		self.mlp1 = mlp1
@@ -547,7 +547,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
                 total_concat_size += features_dim
             else:
                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
-                total_concat_size += 3
+                total_concat_size += 7
 				
       #  print(extractors) # disable comment to see architecture here
         
@@ -573,7 +573,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
     """
 
     def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
-        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim = 1)
+        super(CustomCombinedExtractorCrossAttention, self).__init__(observation_space, features_dim = 1)
 
         extractors = {}
         total_concat_size = 0
@@ -581,9 +581,6 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
 
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
-                
-                x1 = observation_space.spaces["observation"][5]
-				# find some way to separate into x1 and x2
 				
                 shared_cnn_1 = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
                 shared_cnn_2 = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
@@ -614,27 +611,12 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                     norm1 = norm1,
                     norm2 = norm2
                 )
-attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None,
-                			shared_1,
-						shared_2,
-						integrator,
-						head,
-						m.Identity(out_dim=head.out_shape[0]),
-						attention1,
-						attention2,
-						mlp1,
-						mlp2,
-						norm1,
-						norm2,
-						concatenate=self.concatenate,
-						contextualReasoning1=self.context1,
-						contextualReasoning2=self.context2
-				
+
                 extractors[key] = self.output
                 total_concat_size += features_dim
             else:
                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
-                total_concat_size += 3
+                total_concat_size += 7
 				
       #  print(extractors) # disable comment to see architecture here
         
@@ -648,34 +630,11 @@ attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None,
 
         # self.extractors contain nn.Modules that do all the processing.
         for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key]))
+            if key == "observation":
+                x1 = observations[key][:, :, :160, :] # first half
+                x2 = observations[key][:, :, 160:, :] # second half
+                encoded_tensor_list.append(extractor(x1, x2))
+            else:
+                encoded_tensor_list.append(extractor(observations[key]))
         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
         return torch.cat(encoded_tensor_list, dim=1)
-
-
-# policy_kwargs = dict(
-#     features_extractor_class=CustomFeatureExtractor,
-#     features_extractor_kwargs=dict(features_dim=128),
-# )
-
-# Below is the bash script
-# CUDA_VISIBLE_DEVICES=0 python3 src/train.py \
-#   --algorithm sac \
-#   --domain_name robot \
-#   --task_name  reach \
-#   --episode_length 50 \
-#   --exp_suffix ours \
-#   --eval_mode none \
-#   --save_video \
-#   --eval_freq 250k \
-#   --train_steps 1000k \
-#   --save_freq 250k \
-#   --log_dir logs \
-#   --seed 99 \
-#   --cameras 2 \
-#   --action_space xy \
-#   --attention 1 \
-#   --concat 0 \
-#   --observation_type image \
-#   --context1 1 \
-#   --context2 1 \
