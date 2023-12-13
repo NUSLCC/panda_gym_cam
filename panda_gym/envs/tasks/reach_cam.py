@@ -125,7 +125,8 @@ class ReachCam(Task):
         jittered_img = colorjitter(
             resized_img, brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5
         )
-        final_img = mask_image(jittered_img)
+        #final_img = mask_image(jittered_img)
+        final_img = jittered_img
         return final_img
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
