@@ -20,13 +20,13 @@ if __name__=="__main__":
                 # Parameters for SAC
                 policy_kwargs=dict(
                     features_extractor_class=CustomCombinedExtractorCrossAttention,
-                    # output size of custom combined extractor = image features + achieved goal + desired goal. e.g. Identity projection output is torch.Size([16, 30528]. So 30528+3+3 = 30536 
-                    features_extractor_kwargs=dict(features_dim=30536), 
+                    # output size of custom combined extractor = image features + achieved goal + desired goal. e.g. Identity projection output is torch.Size([16, 30528]. So 30528+7+7 = 30542 
+                    features_extractor_kwargs=dict(features_dim=30542), 
                     net_arch=[512, 512, 512], 
                     n_critics=2)
     )
 
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_attention_table_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_cross_attention_table_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
