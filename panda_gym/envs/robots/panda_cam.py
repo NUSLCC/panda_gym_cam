@@ -116,8 +116,8 @@ class PandaCam(PyBulletRobot):
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_robot_cam()
         resized_img = resize_image(np.array(rgb_img).astype(np.uint8))
-        final_img = mask_image(resized_img)
-        return final_img
+        #final_img = mask_image(resized_img)
+        return resized_img
 
     def render_from_robot_cam(
         self,

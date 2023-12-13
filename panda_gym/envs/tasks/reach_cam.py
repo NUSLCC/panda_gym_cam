@@ -116,8 +116,8 @@ class ReachCam(Task):
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam()
         resized_img = resize_image(np.array(rgb_img).astype(np.uint8))
-        final_img = mask_image(resized_img)
-        return final_img
+        # final_img = mask_image(resized_img)
+        return resized_img
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
         # target_position = self.sim.get_base_position("target")
