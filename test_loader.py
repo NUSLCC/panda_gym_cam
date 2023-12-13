@@ -1,14 +1,15 @@
 from panda_gym.envs import PandaReachCamEnv
 from stable_baselines3 import DDPG, HerReplayBuffer
+from stable_baselines3 import SAC, HerReplayBuffer
 from sb3_contrib import TQC
 import time
 import gymnasium as gym
 
-env = gym.make('PandaReachCam-v3', render_mode="human", control_type="ee") # rgb_array
+env = gym.make('PandaReachCam-v3', render_mode="human", control_type="joints") # rgb_array
 print(env.action_space)
 print(env.observation_space)
-# HER must be loaded with the env
-model = DDPG.load("ddpg_her_panda_ee_model", env=env)
+# # HER must be loaded with the env
+model = SAC.load("sac_her_panda_mask_only", env=env)
 
 obs, _ = env.reset()
 for i in range(1000):
