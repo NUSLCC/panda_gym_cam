@@ -23,11 +23,11 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         self.simplecnn_module = SimpleCNN(3, 3)
         self.unidirectional_attention_module = UnidirectionalAttentionModule(self.num_channels, self.num_heads, self.num_blocks)
     def forward(self, observations) -> torch.Tensor:
-        together = observations["observations"]
+        together = observations["observation"]
         a = together.shape[0]
         local_source = together[:int(a/2)]
         global_source = together[int(a/2):]
-        output_local = self.unidirectional_attention_module(local_source.float(), global_source.float())
+        output_local = self.unidirectional_attention_module(local_source, global_source)
         print(output_local.shape)
         return output_local
     
