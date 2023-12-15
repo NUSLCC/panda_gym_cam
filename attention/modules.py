@@ -145,8 +145,11 @@ class AttentionBlock(nn.Module):
 
 	def forward(self, query, key, value):
 		print(f'Attention block Input shape: {self.dim}')
+		print(f"Query, key and value shapes: {query.shape}, {key.shape}, {value.shape}")
+		print(f'Norm shapes: {self.norm1(query).shape}, {self.norm2(key).shape}, {self.norm3(value).shape}')
 		x = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
 		if self.context:
+			print(f'Attention block Output shape: {x.shape}')
 			return x
 		else:
 			x = x.flatten(start_dim=1)
@@ -457,18 +460,19 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 
 	def forward(self, x1, x2, detach=False):
 		
-		x1_org = x1
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
 
 		B, C, H, W = x1.shape
+		
+		print(f"x1 shape {x1.shape} and x2 shape {x2.shape}")
 
 		x1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
 		x1 = self.norm1(x1)
 		x1 = x1.view(B, C, -1).permute(0, 2, 1)
 		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
 
-		x2 = self.attention2(x2, x1_org, x1_org) # Contextual reasoning on 1st person image based on 3rd person image
+		x2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
 		x2 = self.norm2(x2)
 		x2 = x2.view(B, C, -1).permute(0, 2, 1)
 		x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
@@ -583,13 +587,14 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
 				
-                shared_cnn_1 = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
-                shared_cnn_2 = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
+                shared_cnn_1 = SharedCNN(obs_shape=(3,160,90))
+                shared_cnn_2 = SharedCNN(obs_shape=(3,160,90))
                 integrator = Integrator(shared_cnn_1.out_shape, shared_cnn_2.out_shape)
                 head = HeadCNN(in_shape=shared_cnn_1.out_shape, flatten=True)
                 mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
 
                 attention_1 = AttentionBlock(dim=shared_cnn_1.out_shape, contextualReasoning=True)
+              #  print(f'SHARED CNN OUT SHAPE: {shared_cnn_1.out_shape}')
                 mlp1 = Mlp(in_features=shared_cnn_1.out_shape[0], hidden_features=mlp_hidden_dim, act_layer=nn.GELU)
                 norm1 = nn.LayerNorm(shared_cnn_1.out_shape)
 
