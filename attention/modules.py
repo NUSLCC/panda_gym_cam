@@ -69,7 +69,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
-		print(f'Identity projection input/output: {x.shape}')
+	#	print(f'Identity projection input/output: {x.shape}')
 		return x
 
 
@@ -144,16 +144,16 @@ class AttentionBlock(nn.Module):
 		self.dim = dim
 
 	def forward(self, query, key, value):
-		print(f'Attention block Input shape: {self.dim}')
-		print(f"Query, key and value shapes: {query.shape}, {key.shape}, {value.shape}")
-		print(f'Norm shapes: {self.norm1(query).shape}, {self.norm2(key).shape}, {self.norm3(value).shape}')
+		# print(f'Attention block Input shape: {self.dim}')
+		# print(f"Query, key and value shapes: {query.shape}, {key.shape}, {value.shape}")
+		# print(f'Norm shapes: {self.norm1(query).shape}, {self.norm2(key).shape}, {self.norm3(value).shape}')
 		x = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
 		if self.context:
-			print(f'Attention block Output shape: {x.shape}')
+		#	print(f'Attention block Output shape: {x.shape}')
 			return x
 		else:
 			x = x.flatten(start_dim=1)
-			print(f'Attention block Output shape: {x.shape}')
+		#	print(f'Attention block Output shape: {x.shape}')
 			return x
 
 
@@ -172,8 +172,8 @@ class SharedCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Shared CNN Input shape: {x.shape}')
-		print(f'Shared CNN Output shape: {self.layers(x).shape}')
+	#	print(f'Shared CNN Input shape: {x.shape}')
+	#	print(f'Shared CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 
@@ -191,8 +191,8 @@ class HeadCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Head CNN Input shape: {x.shape}')
-		print(f'Head CNN Output shape: {self.layers(x).shape}')
+		# print(f'Head CNN Input shape: {x.shape}')
+		# print(f'Head CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 		
@@ -465,7 +465,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 
 		B, C, H, W = x1.shape
 		
-		print(f"x1 shape {x1.shape} and x2 shape {x2.shape}")
+	#	print(f"x1 shape {x1.shape} and x2 shape {x2.shape}")
 
 		x1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
 		x1 = self.norm1(x1)
