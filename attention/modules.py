@@ -158,7 +158,7 @@ class AttentionBlock(nn.Module):
 
 
 class SharedCNN(nn.Module):
-	def __init__(self, obs_shape, num_layers=11, num_filters=32, mean_zero=False):
+	def __init__(self, obs_shape, num_layers=4, num_filters=32, mean_zero=False):
 		super().__init__()
 		assert len(obs_shape) == 3
 		self.num_layers = num_layers
