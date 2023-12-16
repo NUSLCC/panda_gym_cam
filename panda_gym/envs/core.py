@@ -8,6 +8,8 @@ from gymnasium.utils import seeding
 
 from panda_gym.pybullet import PyBullet
 
+from panda_gym.utils import CrossViT
+
 class PyBulletRobot(ABC):
     """Base class for robot env.
 
@@ -434,14 +436,17 @@ class RobotCamTaskEnv(gym.Env):
                 yaw=self.render_yaw,
                 pitch=self.render_pitch,
             )
+        self.model = CrossViT(image_size = 224, channels = 3, num_classes = 2408448)
 
     def _get_obs(
             self, 
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.uint8)  # active camera
+        #robot_obs = self.robot.get_obs().astype(np.uint8)  # active camera
         task_obs = self.task.get_obs().astype(np.uint8)  # static camera
-        observation = np.concatenate([robot_obs, task_obs])
+        #observation = np.concatenate([robot_obs, task_obs])
+        observation = self.model(task_obs)
+        #observation = task_obs
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
         desired_joint_angles = self.robot.inverse_kinematics(

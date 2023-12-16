@@ -10,6 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from gymnasium import spaces
+from crossvit import CrossViT
+from crossvit import CrossAttention
 
 class CustomFeaturesExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: spaces.Box, features_dim: int = 256):
@@ -28,6 +30,24 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         output_local = self.unidirectional_attention_module(local_source, global_source)
         print(output_local.shape)
         return output_local
+
+# class CustomFeaturesExtractor(BaseFeaturesExtractor):
+#     def __init__(self, observation_space: spaces.Box, features_dim: int = 256):
+#         super().__init__(observation_space, features_dim)
+#         self.num_channels = 3
+#         self.num_heads = 3
+#         self.num_blocks = 1
+#         self.simplecnn_module = SimpleCNN(3, 3)
+#         self.unidirectional_attention_module = UnidirectionalAttentionModule(self.num_channels, self.num_heads, self.num_blocks)
+    
+#     def forward(self, observations) -> torch.Tensor:
+#         together = observations["observation"]
+#         a = together.shape[0]
+#         local_source = together[:int(a/2)]
+#         global_source = together[int(a/2):]
+#         output_local = self.unidirectional_attention_module(local_source, global_source)
+#         print(output_local.shape)
+#         return output_local
     
 class SimpleCNN(nn.Module):
     def __init__(self, in_channels, out_channels, inside_channels=32, num_layers=1):

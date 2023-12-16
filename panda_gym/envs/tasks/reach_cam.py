@@ -123,7 +123,7 @@ class ReachCam(Task):
 
     def render_from_stationary_cam(
         self,
-        # cam_width: int = 400,
+        # cam_width: int = 224,
         # cam_height: int = 224,
         cam_width: int = 224,
         cam_height: int = 224,
