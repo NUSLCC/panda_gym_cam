@@ -1,6 +1,3 @@
-import sys
-import os
-import requests
 import numpy as np
 import math
 import torch
@@ -22,6 +19,7 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         self.num_blocks = 1
         self.simplecnn_module = SimpleCNN(3, 3)
         self.unidirectional_attention_module = UnidirectionalAttentionModule(self.num_channels, self.num_heads, self.num_blocks)
+    
     def forward(self, observations) -> torch.Tensor:
         together = observations["observation"]
         a = together.shape[0]
