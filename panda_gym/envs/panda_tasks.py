@@ -118,6 +118,7 @@ class PandaPickAndPlaceEnv(RobotTaskEnv):
             render_roll=render_roll,
         )
 
+
 class PandaPickandPlaceCamEnv(RobotCamTaskEnv):
     """Pick and place task wih Panda Cam robot.
 
@@ -317,6 +318,7 @@ class PandaReachCamObstacleEnv(RobotCamTaskEnv):
             render_roll=render_roll,
         )
 
+
 class PandaReachCamEnv(RobotCamTaskEnv):
     """Reach task wih Panda Cam robot.
 
@@ -365,6 +367,7 @@ class PandaReachCamEnv(RobotCamTaskEnv):
             render_pitch=render_pitch,
             render_roll=render_roll,
         )
+
 
 class PandaSlideEnv(RobotTaskEnv):
     """Slide task wih Panda robot.
