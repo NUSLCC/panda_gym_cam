@@ -3,7 +3,7 @@ from torch import nn, einsum
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-from module import Attention, PreNorm, FeedForward, CrossAttention
+from panda_gym.module import Attention, PreNorm, FeedForward, CrossAttention
 import numpy as np
 
 

@@ -8,7 +8,7 @@ from gymnasium.utils import seeding
 
 from panda_gym.pybullet import PyBullet
 
-from panda_gym.utils import CrossViT
+from panda_gym.crossvit import CrossViT
 
 class PyBulletRobot(ABC):
     """Base class for robot env.

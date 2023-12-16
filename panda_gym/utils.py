@@ -10,8 +10,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from gymnasium import spaces
-from crossvit import CrossViT
-from crossvit import CrossAttention
 
 class CustomFeaturesExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: spaces.Box, features_dim: int = 256):
