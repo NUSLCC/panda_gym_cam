@@ -6,14 +6,22 @@ import math
 from functools import partial
 import gymnasium as gym
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+import matplotlib.pyplot as plt
 
 def _get_out_shape(in_shape, layers, attn=False):
+	#print(f"IN_SHAPE: {in_shape}")
 	x = torch.randn(*in_shape).unsqueeze(0)
 	if attn:
 		return layers(x, x, x).squeeze(0).shape
 	else:
 		return layers(x).squeeze(0).shape
-
+	
+def _get_out_shape_modified(in_shape, layers, attn=False):
+	x = torch.randn(*in_shape).unsqueeze(0)
+	if attn:
+		return layers(x, x, x)[0].squeeze(0).shape # return layers(x,x,x)[0] because layers(x,x,x) is a tuple (x, attention_weights)
+	else:
+		return layers(x).squeeze(0).shape
 
 def gaussian_logprob(noise, log_std):
 	"""Compute Gaussian log probability"""
@@ -69,7 +77,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
-		print(f'Identity projection input/output: {x.shape}')
+	#	print(f'Identity projection input/output: {x.shape}')
 		return x
 
 
@@ -117,7 +125,7 @@ class SelfAttention(nn.Module):
         self.in_channels = in_channels
 
     def forward(self, query, key, value):
-        N, C, H, W = query.shape
+        N, C, W, H = query.shape
         assert query.shape == key.shape == value.shape, "Key, query and value inputs must be of the same dimensions in this implementation"
         q = self.conv_query(query).reshape(N, C, H*W)#.permute(0, 2, 1)
         k = self.conv_key(key).reshape(N, C, H*W)#.permute(0, 2, 1)
@@ -127,8 +135,54 @@ class SelfAttention(nn.Module):
         output = v@attention
         output = output.reshape(N, C, H, W)
         return query + output # Add with query and output
+	
+class SelfAttentionWithWeights(nn.Module):
+    def __init__(self, in_channels):
+        super().__init__()
+        self.conv_query = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
+        self.conv_key = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
+        self.conv_value = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=1)
+        self.in_channels = in_channels
 
+    def forward(self, query, key, value):
+        N, C, H, W = query.shape
+        assert query.shape == key.shape == value.shape, "Key, query and value inputs must be of the same dimensions in this implementation"
+        q = self.conv_query(query).reshape(N, C, H*W)#.permute(0, 2, 1)
+        k = self.conv_key(key).reshape(N, C, H*W)#.permute(0, 2, 1)
+        v = self.conv_value(value).reshape(N, C, H*W)#.permute(0, 2, 1)
+        attention = k.transpose(1, 2)@q / C**0.5
+        attention = attention.softmax(dim=1)
+        output = v@attention
+        output = output.reshape(N, C, H, W)
+        return query + output, attention # Add with query and output. Attention == attn weights
 
+class AttentionBlockWithWeights(nn.Module):
+	def __init__(self, dim, num_heads=1, qkv_bias=False, qk_scale=None, norm_layer=nn.LayerNorm, contextualReasoning=False):
+		super().__init__()
+		self.norm1 = norm_layer(dim)
+		self.norm2 = norm_layer(dim)
+		self.norm3 = norm_layer(dim)
+		self.attn = SelfAttentionWithWeights(dim[0])
+		self.context = contextualReasoning
+		temp_shape = _get_out_shape_modified(dim, self.attn, attn=True)
+		self.out_shape = _get_out_shape_modified(temp_shape, nn.Flatten())
+		self.apply(orthogonal_init)
+		
+		self.dim = dim
+
+	def forward(self, query, key, value):
+		# print(f'Attention block Input shape: {self.dim}')
+		# print(f"Query, key and value shapes: {query.shape}, {key.shape}, {value.shape}")
+		# print(f'Norm shapes: {self.norm1(query).shape}, {self.norm2(key).shape}, {self.norm3(value).shape}')
+		x, attention_weights = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
+		if self.context:
+		#	print(f'Attention block Output shape: {x.shape}')
+			return x, attention_weights
+		else:
+			x = x.flatten(start_dim=1)
+		#	print(f'Attention block Output shape: {x.shape}')
+			return x, attention_weights
+		
 class AttentionBlock(nn.Module):
 	def __init__(self, dim, num_heads=1, qkv_bias=False, qk_scale=None, norm_layer=nn.LayerNorm, contextualReasoning=False):
 		super().__init__()
@@ -144,21 +198,21 @@ class AttentionBlock(nn.Module):
 		self.dim = dim
 
 	def forward(self, query, key, value):
-		print(f'Attention block Input shape: {self.dim}')
-		print(f"Query, key and value shapes: {query.shape}, {key.shape}, {value.shape}")
-		print(f'Norm shapes: {self.norm1(query).shape}, {self.norm2(key).shape}, {self.norm3(value).shape}')
+		# print(f'Attention block Input shape: {self.dim}')
+		# print(f"Query, key and value shapes: {query.shape}, {key.shape}, {value.shape}")
+		# print(f'Norm shapes: {self.norm1(query).shape}, {self.norm2(key).shape}, {self.norm3(value).shape}')
 		x = self.attn(self.norm1(query), self.norm2(key), self.norm3(value))
 		if self.context:
-			print(f'Attention block Output shape: {x.shape}')
+		#	print(f'Attention block Output shape: {x.shape}')
 			return x
 		else:
 			x = x.flatten(start_dim=1)
-			print(f'Attention block Output shape: {x.shape}')
+		#	print(f'Attention block Output shape: {x.shape}')
 			return x
 
 
 class SharedCNN(nn.Module):
-	def __init__(self, obs_shape, num_layers=11, num_filters=32, mean_zero=False):
+	def __init__(self, obs_shape, num_layers=8, num_filters=32, mean_zero=False):
 		super().__init__()
 		assert len(obs_shape) == 3
 		self.num_layers = num_layers
@@ -172,8 +226,8 @@ class SharedCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Shared CNN Input shape: {x.shape}')
-		print(f'Shared CNN Output shape: {self.layers(x).shape}')
+	#	print(f'Shared CNN Input shape: {x.shape}')
+	#	print(f'Shared CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 
@@ -191,8 +245,8 @@ class HeadCNN(nn.Module):
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		print(f'Head CNN Input shape: {x.shape}')
-		print(f'Head CNN Output shape: {self.layers(x).shape}')
+	#	print(f'Head CNN Input shape: {x.shape}')
+	#	print(f'Head CNN Output shape: {self.layers(x).shape}')
 		return self.layers(x)
 
 		
@@ -433,7 +487,6 @@ class MultiViewEncoderModified(nn.Module):
 		
 		return x
 	
-
 class MultiViewCrossAttentionEncoderModified(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
@@ -459,15 +512,99 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		self.out_dim = projection.out_dim
 
 	def forward(self, x1, x2, detach=False):
+
+		x1 = self.shared_cnn_1(x1) #3rd Person
+		x2 = self.shared_cnn_2(x2)
+
+		B, C, W, H = x1.shape 
+		
+		x1 = self.attention1(x1, x2, x2)
+		x1 = self.norm1(x1)
+		x1 = x1.view(B, C, -1).permute(0, 2, 1)
+		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
+
+		x2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
+		x2 = self.norm2(x2)
+		x2 = x2.view(B, C, -1).permute(0, 2, 1)
+		x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
+
+		if self.concatenate:
+			# Concatenate features along channel dimension
+			x = torch.cat((x1, x2), dim=1) 
+		else:
+			x = x1 + x2 
+
+		x = self.integrator(x)
+		x = self.head_cnn(x)
+
+		if detach:
+			x = x.detach()
+
+		x = self.projection(x)
+		
+		return x
+	
+
+class MultiViewCrossAttentionEncoderModifiedTestingOnly(nn.Module):
+	"""
+	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
+	"""
+	def __init__(self, shared_cnn_1, shared_cnn_2, integrator, head_cnn, projection, attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None, concatenate=True):
+		super().__init__()
+		self.shared_cnn_1 = shared_cnn_1
+		self.shared_cnn_2 = shared_cnn_2
+		self.integrator = integrator
+		self.head_cnn = head_cnn
+		self.projection = projection
+		self.relu = nn.ReLU()
+		self.attention1 = attention1
+		self.attention2 = attention2
+
+		self.out_dim = projection.out_dim
+		self.mlp1 = mlp1
+		self.norm1 = norm1
+		self.mlp2 = mlp2
+		self.norm2 = norm2
+		self.concatenate = concatenate
+
+		self.out_dim = projection.out_dim
+
+	def forward(self, x1, x2, detach=False):
+
+		org_img_x1 = x1
+		org_img_x2 = x2
 		
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
 
-		B, C, H, W = x1.shape
+		B, C, W, H = x1.shape 
 		
-		print(f"x1 shape {x1.shape} and x2 shape {x2.shape}")
+		print(f'Org x1 shape {org_img_x1.shape}') # returns 1,3,160,90
+		print(f"x1 shape {x1.shape} and x2 shape {x2.shape}") # returns 1,32,65,30
 
-		x1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
+	#	x1 = self.attention1(x1, x2, x2)
+
+		x1, attention_weights_1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
+		
+		# Generate heatmap
+		print(f"x1 shape: {x1.shape}")
+		print(f"Attention weight shape: {attention_weights_1.shape}") # returns 1, 1950, 1950
+
+		attention_weights_1 = attention_weights_1.unsqueeze(0)
+		print(f"Attention weights shape before: {attention_weights_1.shape}")
+		attention_weights_1 = F.interpolate(attention_weights_1, size = (160,90), mode = 'nearest')  # Turn attentions of shape (1,1,1950,1950) to (1,1,160,90)
+		print(f"Attention weights shape now: {attention_weights_1.shape}")
+		attention_weights_1 = attention_weights_1.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 160, 90)
+		print(f"Attention weights shape after: {attention_weights_1.shape}")
+		heatmap = attention_weights_1
+		#	heatmap = torch.sum(image, dim=1)
+
+		plt.imshow(org_img_x2.squeeze(0).permute(2, 1, 0).detach().cpu().numpy()) # Original 3rd person image convert from (1, 3, 160, 90) to (90, 160, 3) --> H,W,C
+		plt.imshow(heatmap.permute(2, 1, 0).detach().cpu().numpy(), cmap='inferno', alpha=0.6) 
+		plt.title(f'Heatmap on 3rd person image')
+		plt.show()
+
+
 		x1 = self.norm1(x1)
 		x1 = x1.view(B, C, -1).permute(0, 2, 1)
 		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
@@ -593,12 +730,12 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                 head = HeadCNN(in_shape=shared_cnn_1.out_shape, flatten=True)
                 mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
 
-                attention_1 = AttentionBlock(dim=shared_cnn_1.out_shape, contextualReasoning=True)
+                attention_1 = AttentionBlockWithWeights(dim=shared_cnn_1.out_shape, contextualReasoning=True)
               #  print(f'SHARED CNN OUT SHAPE: {shared_cnn_1.out_shape}')
                 mlp1 = Mlp(in_features=shared_cnn_1.out_shape[0], hidden_features=mlp_hidden_dim, act_layer=nn.GELU)
                 norm1 = nn.LayerNorm(shared_cnn_1.out_shape)
 
-                attention_2 = AttentionBlock(dim=shared_cnn_1.out_shape, contextualReasoning=True)
+                attention_2 = AttentionBlockWithWeights(dim=shared_cnn_1.out_shape, contextualReasoning=True)
                 mlp2 = Mlp(in_features=shared_cnn_1.out_shape[0], hidden_features=mlp_hidden_dim, act_layer=nn.GELU)
                 norm2 = nn.LayerNorm(shared_cnn_1.out_shape)
 
