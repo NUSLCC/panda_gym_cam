@@ -212,7 +212,13 @@ class AttentionBlock(nn.Module):
 
 
 class SharedCNN(nn.Module):
-	def __init__(self, obs_shape, num_layers=11, num_filters=32, mean_zero=False):
+	def __init__(self, obs_shape, num_layers=11
+			  
+			  
+			  
+			  
+			  
+			  , num_filters=32, mean_zero=False):
 		super().__init__()
 		assert len(obs_shape) == 3
 		self.num_layers = num_layers
@@ -308,184 +314,6 @@ class Mlp(nn.Module):
         nn.init.normal_(self.fc1.bias, std=1e-6)
         nn.init.normal_(self.fc2.bias, std=1e-6)
 
-class MultiViewEncoder(nn.Module):
-	def __init__(self, shared_cnn_1, shared_cnn_2, integrator, head_cnn, projection, attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None, concatenate=True, contextualReasoning1=False, contextualReasoning2=False):
-		super().__init__()
-		self.shared_cnn_1 = shared_cnn_1
-		self.shared_cnn_2 = shared_cnn_2
-		self.integrator = integrator
-		self.head_cnn = head_cnn
-		self.projection = projection
-		self.relu = nn.ReLU()
-		self.contextualReasoning1 = contextualReasoning1
-		self.contextualReasoning2 = contextualReasoning2
-		self.attention1 = attention1
-		self.attention2 = attention2
-
-		self.mlp1 = mlp1
-		self.norm1 = norm1
-		self.mlp2 = mlp2
-		self.norm2 = norm2
-
-		self.out_dim = projection.out_dim
-		self.concatenate = concatenate
-
-	def forward(self, x1, x2, detach=False):
-		
-		x1 = self.shared_cnn_1(x1) #3rd Person
-		x2 = self.shared_cnn_2(x2)
-
-		B, C, H, W = x1.shape
-
-		if self.contextualReasoning1:
-			x1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
-			x1 = self.norm1(x1)
-			x1 = x1.view(B, C, -1).permute(0, 2, 1)
-			x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
-
-		if self.contextualReasoning2:
-			x2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
-			x2 = self.norm2(x2)
-			x2 = x2.view(B, C, -1).permute(0, 2, 1)
-			x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
-
-		if self.concatenate:
-			# Concatenate features along channel dimension
-			x = torch.cat((x1, x2), dim=1) # 1, 64, 21, 21
-		else:
-			x = x1 + x2 # 1, 32, 21, 21
-
-		x = self.integrator(x)
-		x = self.head_cnn(x)
-
-		
-		if self.attention1 is not None and not self.contextualReasoning1:
-			x = self.relu(self.attention1(x, x, x))
-		
-		if detach:
-			x = x.detach()
-
-		x = self.projection(x)
-		
-		return x
-
-class Actor(nn.Module):
-	def __init__(self, out_dim, projection_dim, state_shape, action_shape, hidden_dim, hidden_dim_state, log_std_min, log_std_max):
-		super().__init__()
-		self.log_std_min = log_std_min
-		self.log_std_max = log_std_max
-
-		self.trunk = nn.Sequential(nn.Linear(out_dim, projection_dim),
-								nn.LayerNorm(projection_dim), nn.Tanh())
-
-		self.layers = nn.Sequential(
-			nn.Linear(projection_dim, hidden_dim), nn.ReLU(inplace=True),
-			nn.Linear(hidden_dim, hidden_dim), nn.ReLU(inplace=True),
-			nn.Linear(hidden_dim, 2 * action_shape[0])
-		)
-
-		if state_shape:
-			self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
-											nn.ReLU(inplace=True),
-											nn.Linear(hidden_dim_state, projection_dim),
-											nn.LayerNorm(projection_dim), nn.Tanh())
-		else:
-			self.state_encoder = None
-		self.apply(orthogonal_init)
-
-	def forward(self, x, state, compute_pi=True, compute_log_pi=True):
-		x = self.trunk(x)
-
-		if self.state_encoder:
-			x = x + self.state_encoder(state)
-
-		mu, log_std = self.layers(x).chunk(2, dim=-1)
-		log_std = torch.tanh(log_std)
-		log_std = self.log_std_min + 0.5 * (
-			self.log_std_max - self.log_std_min
-		) * (log_std + 1)
-
-		if compute_pi:
-			std = log_std.exp()
-			noise = torch.randn_like(mu)
-			pi = mu + noise * std
-		else:
-			pi = None
-			entropy = None
-
-		if compute_log_pi:
-			log_pi = gaussian_logprob(noise, log_std)
-		else:
-			log_pi = None
-
-		mu, pi, log_pi = squash(mu, pi, log_pi)
-
-		return mu, pi, log_pi, log_std
-
-
-class Critic(nn.Module):
-	def __init__(self, out_dim, projection_dim, state_shape, action_shape, hidden_dim, hidden_dim_state):
-		super().__init__()
-		self.projection = nn.Sequential(nn.Linear(out_dim, projection_dim),
-								nn.LayerNorm(projection_dim), nn.Tanh())
-
-		if state_shape:
-			self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
-											nn.ReLU(inplace=True),
-											nn.Linear(hidden_dim_state, projection_dim),
-											nn.LayerNorm(projection_dim), nn.Tanh())
-		else:
-			self.state_encoder = None
-		
-		self.Q1 = nn.Sequential(
-			nn.Linear(projection_dim + action_shape[0], hidden_dim),
-			nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
-			nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
-		self.Q2 = nn.Sequential(
-			nn.Linear(projection_dim + action_shape[0], hidden_dim),
-			nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
-			nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
-		self.apply(orthogonal_init)
-
-	def forward(self, obs, state, action):
-		obs = self.projection(obs)
-
-		if self.state_encoder:
-			obs = obs + self.state_encoder(state)
-
-		h = torch.cat([obs, action], dim=-1)
-		return self.Q1(h), self.Q2(h)
-	
-class MultiViewEncoderModified(nn.Module):
-	"""
-	Input is the dual environment obs (active and static images already concatenated in core.py). Applies self attention.
-	"""
-	def __init__(self, shared_cnn, head_cnn, projection, attention):
-		super().__init__()
-		self.shared_cnn = shared_cnn
-		self.head_cnn = head_cnn
-		self.projection = projection
-		self.relu = nn.ReLU()
-		self.attention = attention
-
-		self.out_dim = projection.out_dim
-
-	def forward(self, x, detach=False):
-		
-		x = self.shared_cnn(x) # Active cam
-
-		B, C, H, W = x.shape
-
-		x = self.head_cnn(x)
-
-		x = self.relu(self.attention(x, x, x))
-		
-		if detach:
-			x = x.detach()
-
-		x = self.projection(x)
-		
-		return x
 	
 class MultiViewCrossAttentionEncoderModified(nn.Module):
 	"""
@@ -512,9 +340,6 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		self.out_dim = projection.out_dim
 
 	def forward(self, x1, x2, detach=False):
-     
-		x1 = x1.permute(0,1,3,2)
-		x2 = x2.permute(0,1,3,2)
 
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
@@ -548,7 +373,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		return x
 	
 
-class MultiViewCrossAttentionEncoderModifiedTestingOnly(nn.Module):
+class MultiViewCrossAttentionEncoderModifiedTesting(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -580,7 +405,7 @@ class MultiViewCrossAttentionEncoderModifiedTestingOnly(nn.Module):
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
 
-		B, C, W, H = x1.shape 
+		B, C, H, W = x1.shape 
 		
 		print(f'Org x1 shape {org_img_x1.shape}') # returns 1,3,160,90
 		print(f"x1 shape {x1.shape} and x2 shape {x2.shape}") # returns 1,32,65,30
@@ -591,20 +416,23 @@ class MultiViewCrossAttentionEncoderModifiedTestingOnly(nn.Module):
 		
 		# Generate heatmap
 		print(f"x1 shape: {x1.shape}")
-		print(f"Attention weight shape: {attention_weights_1.shape}") # returns 1, 1950, 1950
+		print(f"Attention weight shape: {attention_weights_1.shape}") # returns 1, 1416, 1416
 
-		attention_weights_1 = attention_weights_1.unsqueeze(0)
+		attention_weights_1 = attention_weights_1.unsqueeze(0) # returns 1, 1, 1416, 1416
 		print(f"Attention weights shape before: {attention_weights_1.shape}")
-		attention_weights_1 = F.interpolate(attention_weights_1, size = (160,90), mode = 'nearest')  # Turn attentions of shape (1,1,1950,1950) to (1,1,160,90)
+		print(f"Attention weights before: {attention_weights_1}")
+		attention_weights_1 = F.interpolate(attention_weights_1, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
 		print(f"Attention weights shape now: {attention_weights_1.shape}")
-		attention_weights_1 = attention_weights_1.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 160, 90)
+		attention_weights_1 = attention_weights_1.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 90, 160)
 		print(f"Attention weights shape after: {attention_weights_1.shape}")
 		heatmap = attention_weights_1
 		#	heatmap = torch.sum(image, dim=1)
 
-		plt.imshow(org_img_x2.squeeze(0).permute(2, 1, 0).detach().cpu().numpy()) # Original 3rd person image convert from (1, 3, 160, 90) to (90, 160, 3) --> H,W,C
-		plt.imshow(heatmap.permute(2, 1, 0).detach().cpu().numpy(), cmap='inferno', alpha=0.6) 
-		plt.title(f'Heatmap on 3rd person image')
+		print(f"Shape before showing: {org_img_x2.squeeze(0).permute(1,2,0).detach().cpu().numpy().shape}")
+
+		plt.imshow(org_img_x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
+		plt.imshow(heatmap.permute(1, 2, 0).detach().cpu().numpy(), cmap='inferno', alpha=0.6) 
+		plt.title(f'3rd person image')
 		plt.show()
 
 
@@ -612,10 +440,28 @@ class MultiViewCrossAttentionEncoderModifiedTestingOnly(nn.Module):
 		x1 = x1.view(B, C, -1).permute(0, 2, 1)
 		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
 
-		x2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
+		x2, attention_weights_2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
 		x2 = self.norm2(x2)
 		x2 = x2.view(B, C, -1).permute(0, 2, 1)
 		x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
+
+		# Generate heatmap
+		print(f"x2 shape: {x1.shape}")
+		print(f"Attention weight 2 shape: {attention_weights_2.shape}") # returns 1, 1416, 1416
+
+		attention_weights_2 = attention_weights_1.unsqueeze(0) # returns 1, 1, 1416, 1416
+		print(f"Attention weights shape before: {attention_weights_2.shape}")
+		attention_weights_2 = F.interpolate(attention_weights_2, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
+		print(f"Attention weights shape now: {attention_weights_2.shape}")
+		attention_weights_2 = attention_weights_2.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 90, 160)
+		print(f"Attention weights shape after: {attention_weights_2.shape}")
+		heatmap = attention_weights_2
+
+		plt.imshow(org_img_x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
+		#plt.imshow(heatmap.permute(1, 2, 0).detach().cpu().numpy(), cmap='inferno', alpha=0.6) 
+		plt.title(f'1st person image')
+		plt.show()
+		
 
 		if self.concatenate:
 			# Concatenate features along channel dimension
@@ -632,83 +478,6 @@ class MultiViewCrossAttentionEncoderModifiedTestingOnly(nn.Module):
 		x = self.projection(x)
 		
 		return x
-
-class CustomFeatureExtractor(BaseFeaturesExtractor):
-    """
-    :param observation_space: (gym.Space)
-    :param features_dim: (int) Number of features extracted.
-        This corresponds to the number of unit for the last layer.
-    """
-
-    def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
-        super(CustomFeatureExtractor, self).__init__(observation_space, features_dim)
-		
-        shared_cnn = SharedCNN(obs_shape=observation_space.shape)
-        head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
-        attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
-        projection = Identity(out_dim=head.out_shape[0])
-		
-        self.output = MultiViewEncoderModified(
-            shared_cnn = shared_cnn,
-            head_cnn = head,
-            projection = projection,
-            attention= attention_block
-        )
-		
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        return self.output(observations)
-
-class CustomCombinedExtractor(BaseFeaturesExtractor):
-    """
-    Custom feature extractor for handling multiple inputs (image + goal info). 
-    Observation["observation"] is image data,
-    and observation["achieved_goal"] and ["desired_goal"] are joint info.
-    """
-
-    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
-        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim = 1)
-
-        extractors = {}
-        total_concat_size = 0
-        self.output = None
-
-        for key, subspace in observation_space.spaces.items():
-            if key == "observation": 
-				
-                shared_cnn = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
-                head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
-                attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
-                projection = Identity(out_dim=head.out_shape[0])
-                
-                self.output = MultiViewEncoderModified(
-                    shared_cnn = shared_cnn,
-                    head_cnn = head,
-                    projection = projection,
-                    attention= attention_block
-                )
-				
-                extractors[key] = self.output
-                total_concat_size += features_dim
-            else:
-                extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
-                total_concat_size += 7
-				
-      #  print(extractors) # disable comment to see architecture here
-        
-        self.extractors = nn.ModuleDict(extractors)
-	
-        # Update the features dim manually
-        self._features_dim = total_concat_size
-
-    def forward(self, observations) -> torch.Tensor:
-        encoded_tensor_list = []
-
-        # self.extractors contain nn.Modules that do all the processing.
-        for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key]))
-        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
-        return torch.cat(encoded_tensor_list, dim=1)
     
 class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
     """
@@ -727,8 +496,8 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
 				
-                shared_cnn_1 = SharedCNN(obs_shape=(3,90,160))
-                shared_cnn_2 = SharedCNN(obs_shape=(3,90,160))
+                shared_cnn_1 = SharedCNN(obs_shape=(3,160,90))
+                shared_cnn_2 = SharedCNN(obs_shape=(3,160,90))
                 integrator = Integrator(shared_cnn_1.out_shape, shared_cnn_2.out_shape)
                 head = HeadCNN(in_shape=shared_cnn_1.out_shape, flatten=True)
                 mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
@@ -786,7 +555,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         return torch.cat(encoded_tensor_list, dim=1)
 
 
-class CustomCombinedExtractorCrossAttentionTestingOnly(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttentionTesting(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
@@ -853,6 +622,7 @@ class CustomCombinedExtractorCrossAttentionTestingOnly(BaseFeaturesExtractor):
         # self.extractors contain nn.Modules that do all the processing.
         for key, extractor in self.extractors.items():
             if key == "observation":
+                print(f'KEY SHAPE: {observations[key].shape}')
                 x1 = observations[key][:, :, :160, :] # first half
                 x2 = observations[key][:, :, 160:, :] # second half
                 encoded_tensor_list.append(extractor(x1, x2))
@@ -860,3 +630,271 @@ class CustomCombinedExtractorCrossAttentionTestingOnly(BaseFeaturesExtractor):
                 encoded_tensor_list.append(extractor(observations[key]))
         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
         return torch.cat(encoded_tensor_list, dim=1)
+
+
+
+
+
+
+
+
+
+
+
+
+# class MultiViewEncoder(nn.Module):
+# 	def __init__(self, shared_cnn_1, shared_cnn_2, integrator, head_cnn, projection, attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None, concatenate=True, contextualReasoning1=False, contextualReasoning2=False):
+# 		super().__init__()
+# 		self.shared_cnn_1 = shared_cnn_1
+# 		self.shared_cnn_2 = shared_cnn_2
+# 		self.integrator = integrator
+# 		self.head_cnn = head_cnn
+# 		self.projection = projection
+# 		self.relu = nn.ReLU()
+# 		self.contextualReasoning1 = contextualReasoning1
+# 		self.contextualReasoning2 = contextualReasoning2
+# 		self.attention1 = attention1
+# 		self.attention2 = attention2
+
+# 		self.mlp1 = mlp1
+# 		self.norm1 = norm1
+# 		self.mlp2 = mlp2
+# 		self.norm2 = norm2
+
+# 		self.out_dim = projection.out_dim
+# 		self.concatenate = concatenate
+
+# 	def forward(self, x1, x2, detach=False):
+		
+# 		x1 = self.shared_cnn_1(x1) #3rd Person
+# 		x2 = self.shared_cnn_2(x2)
+
+# 		B, C, H, W = x1.shape
+
+# 		if self.contextualReasoning1:
+# 			x1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
+# 			x1 = self.norm1(x1)
+# 			x1 = x1.view(B, C, -1).permute(0, 2, 1)
+# 			x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
+
+# 		if self.contextualReasoning2:
+# 			x2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
+# 			x2 = self.norm2(x2)
+# 			x2 = x2.view(B, C, -1).permute(0, 2, 1)
+# 			x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
+
+# 		if self.concatenate:
+# 			# Concatenate features along channel dimension
+# 			x = torch.cat((x1, x2), dim=1) # 1, 64, 21, 21
+# 		else:
+# 			x = x1 + x2 # 1, 32, 21, 21
+
+# 		x = self.integrator(x)
+# 		x = self.head_cnn(x)
+
+		
+# 		if self.attention1 is not None and not self.contextualReasoning1:
+# 			x = self.relu(self.attention1(x, x, x))
+		
+# 		if detach:
+# 			x = x.detach()
+
+# 		x = self.projection(x)
+		
+# 		return x
+
+# class Actor(nn.Module):
+# 	def __init__(self, out_dim, projection_dim, state_shape, action_shape, hidden_dim, hidden_dim_state, log_std_min, log_std_max):
+# 		super().__init__()
+# 		self.log_std_min = log_std_min
+# 		self.log_std_max = log_std_max
+
+# 		self.trunk = nn.Sequential(nn.Linear(out_dim, projection_dim),
+# 								nn.LayerNorm(projection_dim), nn.Tanh())
+
+# 		self.layers = nn.Sequential(
+# 			nn.Linear(projection_dim, hidden_dim), nn.ReLU(inplace=True),
+# 			nn.Linear(hidden_dim, hidden_dim), nn.ReLU(inplace=True),
+# 			nn.Linear(hidden_dim, 2 * action_shape[0])
+# 		)
+
+# 		if state_shape:
+# 			self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
+# 											nn.ReLU(inplace=True),
+# 											nn.Linear(hidden_dim_state, projection_dim),
+# 											nn.LayerNorm(projection_dim), nn.Tanh())
+# 		else:
+# 			self.state_encoder = None
+# 		self.apply(orthogonal_init)
+
+# 	def forward(self, x, state, compute_pi=True, compute_log_pi=True):
+# 		x = self.trunk(x)
+
+# 		if self.state_encoder:
+# 			x = x + self.state_encoder(state)
+
+# 		mu, log_std = self.layers(x).chunk(2, dim=-1)
+# 		log_std = torch.tanh(log_std)
+# 		log_std = self.log_std_min + 0.5 * (
+# 			self.log_std_max - self.log_std_min
+# 		) * (log_std + 1)
+
+# 		if compute_pi:
+# 			std = log_std.exp()
+# 			noise = torch.randn_like(mu)
+# 			pi = mu + noise * std
+# 		else:
+# 			pi = None
+# 			entropy = None
+
+# 		if compute_log_pi:
+# 			log_pi = gaussian_logprob(noise, log_std)
+# 		else:
+# 			log_pi = None
+
+# 		mu, pi, log_pi = squash(mu, pi, log_pi)
+
+# 		return mu, pi, log_pi, log_std
+
+
+# class Critic(nn.Module):
+# 	def __init__(self, out_dim, projection_dim, state_shape, action_shape, hidden_dim, hidden_dim_state):
+# 		super().__init__()
+# 		self.projection = nn.Sequential(nn.Linear(out_dim, projection_dim),
+# 								nn.LayerNorm(projection_dim), nn.Tanh())
+
+# 		if state_shape:
+# 			self.state_encoder = nn.Sequential(nn.Linear(state_shape[0], hidden_dim_state),
+# 											nn.ReLU(inplace=True),
+# 											nn.Linear(hidden_dim_state, projection_dim),
+# 											nn.LayerNorm(projection_dim), nn.Tanh())
+# 		else:
+# 			self.state_encoder = None
+		
+# 		self.Q1 = nn.Sequential(
+# 			nn.Linear(projection_dim + action_shape[0], hidden_dim),
+# 			nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
+# 			nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
+# 		self.Q2 = nn.Sequential(
+# 			nn.Linear(projection_dim + action_shape[0], hidden_dim),
+# 			nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
+# 			nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
+# 		self.apply(orthogonal_init)
+
+# 	def forward(self, obs, state, action):
+# 		obs = self.projection(obs)
+
+# 		if self.state_encoder:
+# 			obs = obs + self.state_encoder(state)
+
+# 		h = torch.cat([obs, action], dim=-1)
+# 		return self.Q1(h), self.Q2(h)
+	
+# class MultiViewEncoderModified(nn.Module):
+# 	"""
+# 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies self attention.
+# 	"""
+# 	def __init__(self, shared_cnn, head_cnn, projection, attention):
+# 		super().__init__()
+# 		self.shared_cnn = shared_cnn
+# 		self.head_cnn = head_cnn
+# 		self.projection = projection
+# 		self.relu = nn.ReLU()
+# 		self.attention = attention
+
+# 		self.out_dim = projection.out_dim
+
+# 	def forward(self, x, detach=False):
+		
+# 		x = self.shared_cnn(x) # Active cam
+
+# 		B, C, H, W = x.shape
+
+# 		x = self.head_cnn(x)
+
+# 		x = self.relu(self.attention(x, x, x))
+		
+# 		if detach:
+# 			x = x.detach()
+
+# 		x = self.projection(x)
+		
+# 		return x
+	
+
+# class CustomFeatureExtractor(BaseFeaturesExtractor):
+#     """
+#     :param observation_space: (gym.Space)
+#     :param features_dim: (int) Number of features extracted.
+#         This corresponds to the number of unit for the last layer.
+#     """
+
+#     def __init__(self, observation_space: gym.spaces.Box, features_dim: int = 256):
+#         super(CustomFeatureExtractor, self).__init__(observation_space, features_dim)
+		
+#         shared_cnn = SharedCNN(obs_shape=observation_space.shape)
+#         head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
+#         attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
+#         projection = Identity(out_dim=head.out_shape[0])
+		
+#         self.output = MultiViewEncoderModified(
+#             shared_cnn = shared_cnn,
+#             head_cnn = head,
+#             projection = projection,
+#             attention= attention_block
+#         )
+		
+
+#     def forward(self, observations: torch.Tensor) -> torch.Tensor:
+#         return self.output(observations)
+
+# class CustomCombinedExtractor(BaseFeaturesExtractor):
+#     """
+#     Custom feature extractor for handling multiple inputs (image + goal info). 
+#     Observation["observation"] is image data,
+#     and observation["achieved_goal"] and ["desired_goal"] are joint info.
+#     """
+
+#     def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
+#         super(CustomCombinedExtractor, self).__init__(observation_space, features_dim = 1)
+
+#         extractors = {}
+#         total_concat_size = 0
+#         self.output = None
+
+#         for key, subspace in observation_space.spaces.items():
+#             if key == "observation": 
+				
+#                 shared_cnn = SharedCNN(obs_shape=observation_space.spaces["observation"].shape)
+#                 head = HeadCNN(in_shape=shared_cnn.out_shape, flatten=False)
+#                 attention_block = AttentionBlock(dim=head.out_shape, contextualReasoning=False)
+#                 projection = Identity(out_dim=head.out_shape[0])
+                
+#                 self.output = MultiViewEncoderModified(
+#                     shared_cnn = shared_cnn,
+#                     head_cnn = head,
+#                     projection = projection,
+#                     attention= attention_block
+#                 )
+				
+#                 extractors[key] = self.output
+#                 total_concat_size += features_dim
+#             else:
+#                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
+#                 total_concat_size += 7
+				
+#       #  print(extractors) # disable comment to see architecture here
+        
+#         self.extractors = nn.ModuleDict(extractors)
+	
+#         # Update the features dim manually
+#         self._features_dim = total_concat_size
+
+#     def forward(self, observations) -> torch.Tensor:
+#         encoded_tensor_list = []
+
+#         # self.extractors contain nn.Modules that do all the processing.
+#         for key, extractor in self.extractors.items():
+#             encoded_tensor_list.append(extractor(observations[key]))
+#         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
+#         return torch.cat(encoded_tensor_list, dim=1)
