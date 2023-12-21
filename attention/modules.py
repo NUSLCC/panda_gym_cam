@@ -125,7 +125,7 @@ class SelfAttention(nn.Module):
         self.in_channels = in_channels
 
     def forward(self, query, key, value):
-        N, C, W, H = query.shape
+        N, C, H, W = query.shape
         assert query.shape == key.shape == value.shape, "Key, query and value inputs must be of the same dimensions in this implementation"
         q = self.conv_query(query).reshape(N, C, H*W)#.permute(0, 2, 1)
         k = self.conv_key(key).reshape(N, C, H*W)#.permute(0, 2, 1)
@@ -512,11 +512,14 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		self.out_dim = projection.out_dim
 
 	def forward(self, x1, x2, detach=False):
+     
+		x1 = x1.permute(0,1,3,2)
+		x2 = x2.permute(0,1,3,2)
 
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
 
-		B, C, W, H = x1.shape 
+		B, C, H, W = x1.shape 
 		
 		x1 = self.attention1(x1, x2, x2)
 		x1 = self.norm1(x1)
@@ -706,8 +709,84 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
             encoded_tensor_list.append(extractor(observations[key]))
         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
         return torch.cat(encoded_tensor_list, dim=1)
-
+    
 class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
+    """
+    Custom feature extractor for handling multiple inputs (image + goal info). 
+    Observation["observation"] is image data,
+    and observation["achieved_goal"] and ["desired_goal"] are joint info.
+    """
+
+    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
+        super(CustomCombinedExtractorCrossAttention, self).__init__(observation_space, features_dim = 1)
+
+        extractors = {}
+        total_concat_size = 0
+        self.output = None
+
+        for key, subspace in observation_space.spaces.items():
+            if key == "observation": 
+				
+                shared_cnn_1 = SharedCNN(obs_shape=(3,90,160))
+                shared_cnn_2 = SharedCNN(obs_shape=(3,90,160))
+                integrator = Integrator(shared_cnn_1.out_shape, shared_cnn_2.out_shape)
+                head = HeadCNN(in_shape=shared_cnn_1.out_shape, flatten=True)
+                mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
+
+                attention_1 = AttentionBlock(dim=shared_cnn_1.out_shape, contextualReasoning=True)
+              #  print(f'SHARED CNN OUT SHAPE: {shared_cnn_1.out_shape}')
+                mlp1 = Mlp(in_features=shared_cnn_1.out_shape[0], hidden_features=mlp_hidden_dim, act_layer=nn.GELU)
+                norm1 = nn.LayerNorm(shared_cnn_1.out_shape)
+
+                attention_2 = AttentionBlock(dim=shared_cnn_1.out_shape, contextualReasoning=True)
+                mlp2 = Mlp(in_features=shared_cnn_1.out_shape[0], hidden_features=mlp_hidden_dim, act_layer=nn.GELU)
+                norm2 = nn.LayerNorm(shared_cnn_1.out_shape)
+
+                projection = Identity(out_dim=head.out_shape[0])
+
+                self.output = MultiViewCrossAttentionEncoderModified(
+                    shared_cnn_1 = shared_cnn_1,
+                    shared_cnn_2 = shared_cnn_2,
+                    integrator = integrator,
+                    head_cnn = head,
+                    projection = projection,
+                    attention1 = attention_1,
+                    attention2 = attention_2,
+                    mlp1 = mlp1,
+                    mlp2 = mlp2,
+                    norm1 = norm1,
+                    norm2 = norm2
+                )
+
+                extractors[key] = self.output
+                total_concat_size += features_dim
+            else:
+                extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
+                total_concat_size += 7
+				
+      #  print(extractors) # disable comment to see architecture here
+        
+        self.extractors = nn.ModuleDict(extractors)
+	
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        # self.extractors contain nn.Modules that do all the processing.
+        for key, extractor in self.extractors.items():
+            if key == "observation":
+                x1 = observations[key][:, :, :160, :] # first half
+                x2 = observations[key][:, :, 160:, :] # second half
+                encoded_tensor_list.append(extractor(x1, x2))
+            else:
+                encoded_tensor_list.append(extractor(observations[key]))
+        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
+        return torch.cat(encoded_tensor_list, dim=1)
+
+
+class CustomCombinedExtractorCrossAttentionTestingOnly(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
