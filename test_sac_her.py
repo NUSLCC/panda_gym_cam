@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from attention.modules import CustomFeatureExtractor, CustomCombinedExtractorCrossAttention
+from attention.modules import CustomCombinedExtractorCrossAttention
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
