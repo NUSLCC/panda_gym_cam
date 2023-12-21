@@ -163,6 +163,7 @@ class ReachCam(Task):
         self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
         self.goal_range_low, self.goal_range_high = generate_semicircle_object_range()
         self.goal = self._sample_goal()
+     #   self.goal = np.array([-0.04,0,0.02]) # REMOVE THIS LINE OF CODE LATER
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
        # self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
       #  self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
