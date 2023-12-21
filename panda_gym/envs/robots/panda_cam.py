@@ -45,7 +45,8 @@ class PandaCam(PyBulletRobot):
         )
 
         self.fingers_indices = np.array([9, 10])
-        self.neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
+        # self.neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
+        self.neutral_joint_values = np.array([0, 0.8067912834262925, -0.002672150273578714, -0.02164546966927822, 0.002617639314443877, 0.8283178561686747, 0.785248279139907, 0, 0])
         self.ee_link = 11
         self.cam_link = 13
         self.sim.set_lateral_friction(self.body_name, self.fingers_indices[0], lateral_friction=1.0)
