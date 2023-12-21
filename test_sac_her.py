@@ -21,7 +21,7 @@ if __name__=="__main__":
                 policy_kwargs=dict(
                     features_extractor_class=CustomCombinedExtractorCrossAttention,
                     # output size of custom combined extractor = image features + achieved goal + desired goal. e.g. Identity projection output is torch.Size([16, 30528]. So 30528+7+7 = 30542 
-                    features_extractor_kwargs=dict(features_dim=45312), 
+                    features_extractor_kwargs=dict(features_dim=30528), 
                     net_arch=[512, 512, 512], 
                     n_critics=2)
     )
@@ -31,5 +31,5 @@ if __name__=="__main__":
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
-    model.learn(total_timesteps=700_000, progress_bar=True)
+    model.learn(total_timesteps=600_000, progress_bar=True)
     model.save("sac_cross_attention_panda")
