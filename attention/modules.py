@@ -7,6 +7,7 @@ from functools import partial
 import gymnasium as gym
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import matplotlib.pyplot as plt
+import cv2
 
 def _get_out_shape(in_shape, layers, attn=False):
 	#print(f"IN_SHAPE: {in_shape}")
@@ -154,6 +155,9 @@ class SelfAttentionWithWeights(nn.Module):
         attention = attention.softmax(dim=1)
         output = v@attention
         output = output.reshape(N, C, H, W)
+        print(f"Attention shape: {attention.shape}")
+        print(f"Query shape: {query.shape}")
+        print(f"Output shape: {output.shape}")
         return query + output, attention # Add with query and output. Attention == attn weights
 
 class AttentionBlockWithWeights(nn.Module):
@@ -212,13 +216,7 @@ class AttentionBlock(nn.Module):
 
 
 class SharedCNN(nn.Module):
-	def __init__(self, obs_shape, num_layers=11
-			  
-			  
-			  
-			  
-			  
-			  , num_filters=32, mean_zero=False):
+	def __init__(self, obs_shape, num_layers=11, num_filters=32, mean_zero=False):
 		super().__init__()
 		assert len(obs_shape) == 3
 		self.num_layers = num_layers
@@ -315,7 +313,7 @@ class Mlp(nn.Module):
         nn.init.normal_(self.fc2.bias, std=1e-6)
 
 	
-class MultiViewCrossAttentionEncoderModified(nn.Module):
+class MultiViewCrossAttentionEncoderModifiedORG(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -346,7 +344,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 
 		B, C, H, W = x1.shape 
 		
-		x1 = self.attention1(x1, x2, x2)
+		x1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
 		x1 = self.norm1(x1)
 		x1 = x1.view(B, C, -1).permute(0, 2, 1)
 		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
@@ -373,7 +371,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		return x
 	
 
-class MultiViewCrossAttentionEncoderModifiedTesting(nn.Module):
+class MultiViewCrossAttentionEncoderModified(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -402,66 +400,88 @@ class MultiViewCrossAttentionEncoderModifiedTesting(nn.Module):
 		org_img_x1 = x1
 		org_img_x2 = x2
 		
-		x1 = self.shared_cnn_1(x1) #3rd Person
-		x2 = self.shared_cnn_2(x2)
+		x1 = self.shared_cnn_1(x1) #1st Person
+		x2 = self.shared_cnn_2(x2) #3rd Person
 
 		B, C, H, W = x1.shape 
 		
 		print(f'Org x1 shape {org_img_x1.shape}') # returns 1,3,160,90
-		print(f"x1 shape {x1.shape} and x2 shape {x2.shape}") # returns 1,32,65,30
+		print(f"After CNN: x1 shape {x1.shape} and x2 shape {x2.shape}") # returns 1,32,59,24. 
 
 	#	x1 = self.attention1(x1, x2, x2)
 
-		x1, attention_weights_1 = self.attention1(x1, x2, x2) # Contextual reasoning on 3rd person image based on 1st person image
+		x1, attention_weights_1 = self.attention1(x1, x2, x2) # Contextual reasoning on 1st person image based on 3rd person image
 		
+		# Query + output (x1) is 1,32,59,24, attention_weights is 1, 1416, 1416
+
 		# Generate heatmap
 		print(f"x1 shape: {x1.shape}")
-		print(f"Attention weight shape: {attention_weights_1.shape}") # returns 1, 1416, 1416
+		print(f"Attention weight 1 shape: {attention_weights_1.shape}") # returns 1, 1416, 1416
 
 		attention_weights_1 = attention_weights_1.unsqueeze(0) # returns 1, 1, 1416, 1416
-		print(f"Attention weights shape before: {attention_weights_1.shape}")
-		print(f"Attention weights before: {attention_weights_1}")
-		attention_weights_1 = F.interpolate(attention_weights_1, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
-		print(f"Attention weights shape now: {attention_weights_1.shape}")
-		attention_weights_1 = attention_weights_1.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 90, 160)
-		print(f"Attention weights shape after: {attention_weights_1.shape}")
+		print(f"Attention weights 1 before interpolation: {attention_weights_1}")
+
+		plt.imshow(attention_weights_1.squeeze(0).permute(1,2,0).detach().cpu().numpy(), cmap='inferno')
+		plt.title('Original attention weights 1 (1st person)')
+		plt.show()
+
+		#attention_weights_1 = F.interpolate(attention_weights_1, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
+		attention_weights_1 = cv2.resize(attention_weights_1.squeeze(0).permute(1,2,0).detach().cpu().numpy(), (160, 90), interpolation=cv2.INTER_AREA)
+		print(f"Attention weights 1 shape aft interpolation: {attention_weights_1.shape}")
+		print(f"Attention weights 1 aft interpolation: {attention_weights_1}")
+		#attention_weights_1 = attention_weights_1.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 90, 160)
+		print(f"Attention weights 1 shape after: {attention_weights_1.shape}")
 		heatmap = attention_weights_1
 		#	heatmap = torch.sum(image, dim=1)
 
 		print(f"Shape before showing: {org_img_x2.squeeze(0).permute(1,2,0).detach().cpu().numpy().shape}")
 
-		plt.imshow(org_img_x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
-		plt.imshow(heatmap.permute(1, 2, 0).detach().cpu().numpy(), cmap='inferno', alpha=0.6) 
-		plt.title(f'3rd person image')
+		fig, ax = plt.subplots(1, 2)
+		ax[0].imshow(org_img_x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 1st person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
+		ax[1].imshow(heatmap, cmap='inferno')
+		ax[0].set_title('1st person image')
+		ax[1].set_title('Heatmap')
 		plt.show()
-
 
 		x1 = self.norm1(x1)
 		x1 = x1.view(B, C, -1).permute(0, 2, 1)
 		x1 = self.mlp1(x1).permute(0, 2, 1).contiguous().view(B, C, H, W)
 
-		x2, attention_weights_2 = self.attention2(x2, x1, x1) # Contextual reasoning on 1st person image based on 3rd person image
+		print(f"x1 shape before passing into attn: {x1.shape}")
+
+		x2, attention_weights_2 = self.attention2(x2, x1, x1) # Contextual reasoning on 3rd person image based on 1st person image
+		
+		# Query + output (x2) is 1,32,59,24, attention_weights_2 is 1, 1416, 1416
+
+		# Generate heatmap
+		print(f"x2 shape: {x2.shape}")
+		print(f"Attention weight 2 shape: {attention_weights_2.shape}") # returns 1, 1416, 1416
+
+		attention_weights_2 = attention_weights_2.unsqueeze(0) # returns 1, 1, 1416, 1416
+		print(f"Attention weights 2 before interpolation: {attention_weights_2}")
+
+		plt.imshow(attention_weights_2.squeeze(0).permute(1,2,0).detach().cpu().numpy(), cmap='inferno')
+		plt.title('Original attention weights 2 (3rd person)')
+		plt.show()
+
+		#attention_weights_2 = F.interpolate(attention_weights_2, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
+		attention_weights_2 = cv2.resize(attention_weights_2.squeeze(0).permute(1,2,0).detach().cpu().numpy(), (160, 90), interpolation=cv2.INTER_AREA)
+		print(f"Attention weights 2 shape aft interpolation: {attention_weights_2.shape}")
+		print(f"Attention weights 2 aft interpolation: {attention_weights_2}")
+		#attention_weights_2 = attention_weights_2.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 90, 160)
+		print(f"Attention weights 2 shape after: {attention_weights_2.shape}")
+		heatmap = attention_weights_2
+
+		fig, ax = plt.subplots(1, 2)
+		ax[0].imshow(org_img_x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
+		ax[1].imshow(heatmap, cmap='inferno')
+		ax[0].set_title('3rd person image')
+		ax[1].set_title('Heatmap')
+		plt.show()
+		
 		x2 = self.norm2(x2)
 		x2 = x2.view(B, C, -1).permute(0, 2, 1)
 		x2 = self.mlp2(x2).permute(0, 2, 1).contiguous().view(B, C, H, W)
-
-		# Generate heatmap
-		print(f"x2 shape: {x1.shape}")
-		print(f"Attention weight 2 shape: {attention_weights_2.shape}") # returns 1, 1416, 1416
-
-		attention_weights_2 = attention_weights_1.unsqueeze(0) # returns 1, 1, 1416, 1416
-		print(f"Attention weights shape before: {attention_weights_2.shape}")
-		attention_weights_2 = F.interpolate(attention_weights_2, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
-		print(f"Attention weights shape now: {attention_weights_2.shape}")
-		attention_weights_2 = attention_weights_2.squeeze(0).expand(3, -1, -1) # We want to try to make attentions into size (3, 90, 160)
-		print(f"Attention weights shape after: {attention_weights_2.shape}")
-		heatmap = attention_weights_2
-
-		plt.imshow(org_img_x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
-		#plt.imshow(heatmap.permute(1, 2, 0).detach().cpu().numpy(), cmap='inferno', alpha=0.6) 
-		plt.title(f'1st person image')
-		plt.show()
-		
 
 		if self.concatenate:
 			# Concatenate features along channel dimension
@@ -479,7 +499,7 @@ class MultiViewCrossAttentionEncoderModifiedTesting(nn.Module):
 		
 		return x
     
-class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
@@ -555,7 +575,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         return torch.cat(encoded_tensor_list, dim=1)
 
 
-class CustomCombinedExtractorCrossAttentionTesting(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
