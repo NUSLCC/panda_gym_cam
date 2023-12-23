@@ -446,10 +446,10 @@ class RobotCamTaskEnv(gym.Env):
         task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
         if object_in_cam: # pass in both active and static camera img
-            observation = np.concatenate([robot_obs, task_obs])
+            observation = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
         else: # only pass in static cam
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
-            observation = np.concatenate([robot_obs, task_obs])
+            observation = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)

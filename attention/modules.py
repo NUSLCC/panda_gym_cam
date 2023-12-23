@@ -313,7 +313,7 @@ class Mlp(nn.Module):
         nn.init.normal_(self.fc2.bias, std=1e-6)
 
 	
-class MultiViewCrossAttentionEncoderModifiedORG(nn.Module):
+class MultiViewCrossAttentionEncoderModified(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -338,6 +338,13 @@ class MultiViewCrossAttentionEncoderModifiedORG(nn.Module):
 		self.out_dim = projection.out_dim
 
 	def forward(self, x1, x2, detach=False):
+     
+		#print(f"x1 shape {x1.shape} and x2 shape {x2.shape}")
+     
+		# fig, ax = plt.subplots(1,2)
+		# ax[0].imshow(x1[0].permute(1,2,0).detach().cpu().numpy())
+		# ax[1].imshow(x2[0].permute(1,2,0).detach().cpu().numpy())
+		# plt.show()
 
 		x1 = self.shared_cnn_1(x1) #3rd Person
 		x2 = self.shared_cnn_2(x2)
@@ -371,7 +378,7 @@ class MultiViewCrossAttentionEncoderModifiedORG(nn.Module):
 		return x
 	
 
-class MultiViewCrossAttentionEncoderModified(nn.Module):
+class MultiViewCrossAttentionEncoderModifiedTest(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -499,7 +506,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		
 		return x
     
-class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
@@ -516,8 +523,8 @@ class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
 				
-                shared_cnn_1 = SharedCNN(obs_shape=(3,160,90))
-                shared_cnn_2 = SharedCNN(obs_shape=(3,160,90))
+                shared_cnn_1 = SharedCNN(obs_shape=(3,90,160))
+                shared_cnn_2 = SharedCNN(obs_shape=(3,90,160))
                 integrator = Integrator(shared_cnn_1.out_shape, shared_cnn_2.out_shape)
                 head = HeadCNN(in_shape=shared_cnn_1.out_shape, flatten=True)
                 mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
@@ -566,8 +573,8 @@ class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
         # self.extractors contain nn.Modules that do all the processing.
         for key, extractor in self.extractors.items():
             if key == "observation":
-                x1 = observations[key][:, :, :160, :] # first half
-                x2 = observations[key][:, :, 160:, :] # second half
+                x1 = observations[key][:, :, :90, :] # first half
+                x2 = observations[key][:, :, 90:, :] # second half
                 encoded_tensor_list.append(extractor(x1, x2))
             else:
                 encoded_tensor_list.append(extractor(observations[key]))
@@ -575,7 +582,7 @@ class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
         return torch.cat(encoded_tensor_list, dim=1)
 
 
-class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttentionTest(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
@@ -643,8 +650,8 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         for key, extractor in self.extractors.items():
             if key == "observation":
                 print(f'KEY SHAPE: {observations[key].shape}')
-                x1 = observations[key][:, :, :160, :] # first half
-                x2 = observations[key][:, :, 160:, :] # second half
+                x1 = observations[key][:, :, :90, :] # first half
+                x2 = observations[key][:, :, 90:, :] # second half
                 encoded_tensor_list.append(extractor(x1, x2))
             else:
                 encoded_tensor_list.append(extractor(observations[key]))
