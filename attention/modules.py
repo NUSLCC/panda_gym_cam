@@ -313,7 +313,7 @@ class Mlp(nn.Module):
         nn.init.normal_(self.fc2.bias, std=1e-6)
 
 	
-class MultiViewCrossAttentionEncoderModified(nn.Module):
+class MultiViewCrossAttentionEncoderModifiedORG(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -378,7 +378,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		return x
 	
 
-class MultiViewCrossAttentionEncoderModifiedTest(nn.Module):
+class MultiViewCrossAttentionEncoderModified(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
@@ -413,7 +413,7 @@ class MultiViewCrossAttentionEncoderModifiedTest(nn.Module):
 		B, C, H, W = x1.shape 
 		
 		print(f'Org x1 shape {org_img_x1.shape}') # returns 1,3,160,90
-		print(f"After CNN: x1 shape {x1.shape} and x2 shape {x2.shape}") # returns 1,32,59,24. 
+		print(f"After CNN: x1 shape {x1.shape} and x2 shape {x2.shape}") # returns 1,32,24,59. 
 
 	#	x1 = self.attention1(x1, x2, x2)
 
@@ -506,7 +506,7 @@ class MultiViewCrossAttentionEncoderModifiedTest(nn.Module):
 		
 		return x
     
-class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
@@ -582,7 +582,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         return torch.cat(encoded_tensor_list, dim=1)
 
 
-class CustomCombinedExtractorCrossAttentionTest(BaseFeaturesExtractor):
+class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
     """
     Custom feature extractor for handling multiple inputs (image + goal info). 
     Observation["observation"] is image data,
@@ -599,8 +599,8 @@ class CustomCombinedExtractorCrossAttentionTest(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
 				
-                shared_cnn_1 = SharedCNN(obs_shape=(3,160,90))
-                shared_cnn_2 = SharedCNN(obs_shape=(3,160,90))
+                shared_cnn_1 = SharedCNN(obs_shape=(3,90,160))
+                shared_cnn_2 = SharedCNN(obs_shape=(3,90,160))
                 integrator = Integrator(shared_cnn_1.out_shape, shared_cnn_2.out_shape)
                 head = HeadCNN(in_shape=shared_cnn_1.out_shape, flatten=True)
                 mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
