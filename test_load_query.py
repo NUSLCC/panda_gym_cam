@@ -20,5 +20,6 @@ obs, _ = env.reset()
 for i in range(1000):
     action, _states = model.predict(obs, deterministic=True)
     # print(action)
-    obs, reward, terminated, truncated, info = env.step(action)
+    obs, _ = env.reset()
+    #obs, reward, terminated, truncated, info = env.step(action)
     env.render()
