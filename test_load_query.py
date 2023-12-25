@@ -13,6 +13,10 @@ model = SAC.load("sac_cross_attention_panda", env=env)
 
 obs, _ = env.reset()
 
+plt.imshow(obs["observation"].reshape(180,160,3))
+plt.title('First reset')
+plt.show()
+
 # policy = model.policy
 # print(policy)
 # features_extractor = policy.actor.features_extractor
@@ -25,6 +29,7 @@ for i in range(1000):
     obs, _ = env.reset()
 
     plt.imshow(obs["observation"].reshape(180,160,3))
+    plt.title('Subsequent resets')
     plt.show()
     #obs, reward, terminated, truncated, info = env.step(action)
     env.render()

@@ -428,9 +428,9 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		attention_weights_1 = attention_weights_1.unsqueeze(0) # returns 1, 1, 1416, 1416
 		print(f"Attention weights 1 before interpolation: {attention_weights_1}")
 
-		plt.imshow(attention_weights_1.squeeze(0).permute(1,2,0).detach().cpu().numpy(), cmap='inferno')
-		plt.title('Original attention weights 1 (1st person)')
-		plt.show()
+		# plt.imshow(attention_weights_1.squeeze(0).permute(1,2,0).detach().cpu().numpy(), cmap='inferno')
+		# plt.title('Original attention weights 1 (1st person)')
+		# plt.show()
 
 		#attention_weights_1 = F.interpolate(attention_weights_1, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
 		attention_weights_1 = cv2.resize(attention_weights_1.squeeze(0).permute(1,2,0).detach().cpu().numpy(), (160, 90), interpolation=cv2.INTER_AREA)
@@ -467,9 +467,9 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		attention_weights_2 = attention_weights_2.unsqueeze(0) # returns 1, 1, 1416, 1416
 		print(f"Attention weights 2 before interpolation: {attention_weights_2}")
 
-		plt.imshow(attention_weights_2.squeeze(0).permute(1,2,0).detach().cpu().numpy(), cmap='inferno')
-		plt.title('Original attention weights 2 (3rd person)')
-		plt.show()
+		# plt.imshow(attention_weights_2.squeeze(0).permute(1,2,0).detach().cpu().numpy(), cmap='inferno')
+		# plt.title('Original attention weights 2 (3rd person)')
+		# plt.show()
 
 		#attention_weights_2 = F.interpolate(attention_weights_2, size = (90,160), mode = 'nearest')  # Turn attentions of shape (1,1,1416,1416) to (1,1,90,160)
 		attention_weights_2 = cv2.resize(attention_weights_2.squeeze(0).permute(1,2,0).detach().cpu().numpy(), (160, 90), interpolation=cv2.INTER_AREA)
@@ -597,7 +597,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         extractors = {}
         total_concat_size = 0
         self.output = None
-
+		
         for key, subspace in observation_space.spaces.items():
             if key == "observation": 
 				
@@ -657,9 +657,12 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                 x2 = observations[key][:, :, 90:, :] # second half
 
                 fig, ax = plt.subplots(1,3)
-                ax[0].imshow(x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
-                ax[1].imshow(x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
-                ax[2].imshow(observations[key].squeeze(0).detach().cpu().numpy().reshape(180,160,3))
+                ax[0].imshow(observations[key].squeeze(0).detach().cpu().numpy().reshape(180,160,3))
+                ax[0].set_title('Observation image in forward pass')
+                ax[1].imshow(x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
+                ax[1].set_title('Active image in forward pass')
+                ax[2].imshow(x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
+                ax[2].set_title('Static image in forward pass')
                 plt.show()
 
                 encoded_tensor_list.append(extractor(x1, x2))
