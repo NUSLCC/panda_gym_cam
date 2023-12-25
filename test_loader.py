@@ -10,6 +10,7 @@ env = gym.make('PandaReachCam-v3', render_mode="human", control_type="joints") #
 # HER must be loaded with the env
 model = SAC.load("sac_her_panda", env=env)
 
+print('bef obs')
 obs, _ = env.reset()
 # print(obs['observation'])
 
