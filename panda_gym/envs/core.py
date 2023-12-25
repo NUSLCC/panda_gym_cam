@@ -459,6 +459,16 @@ class RobotCamTaskEnv(gym.Env):
         ax[1].set_title('Robot obs in core.py')
         ax[2].imshow(task_obs.reshape(90,160,3))
         ax[2].set_title('Task obs in core.py')
+        plt.show()
+        
+        alt_obs = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
+        fig, ax = plt.subplots(1,3)
+        ax[0].imshow(observation.reshape(180,160,3))
+        ax[0].set_title('Core.py alternate observation (HW instead of WH)')
+        ax[1].imshow(robot_obs.reshape(90,160,3))
+        ax[1].set_title('Alternate robot obs core.py')
+        ax[2].imshow(task_obs.reshape(90,160,3))
+        ax[2].set_title('Alternate Task obs in core.py')
     
         plt.show()
         #print(f'Observation shape: {observation.shape}')
