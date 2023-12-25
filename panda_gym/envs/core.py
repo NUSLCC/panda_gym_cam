@@ -5,6 +5,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from gymnasium.utils import seeding
+import matplotlib.pyplot as plt
 
 from panda_gym.pybullet import PyBullet
 
@@ -450,6 +451,16 @@ class RobotCamTaskEnv(gym.Env):
         else: # only pass in static cam
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
             observation = np.concatenate([robot_obs, task_obs])
+
+        fig, ax = plt.subplots(1,3)
+        ax[0].imshow(observation.reshape(90,320,3))
+        ax[0].set_title('Core.py observation')
+        ax[1].imshow(robot_obs.reshape(90,160,3))
+        ax[1].set_title('Robot obs in core.py')
+        ax[2].imshow(task_obs.reshape(90,160,3))
+        ax[2].set_title('Task obs in core.py')
+    
+        plt.show()
         #print(f'Observation shape: {observation.shape}')
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)

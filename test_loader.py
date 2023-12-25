@@ -13,15 +13,16 @@ model = SAC.load("sac_her_panda", env=env)
 obs, _ = env.reset()
 # print(obs['observation'])
 
+plt.imshow(obs["observation"].reshape(90,320,3))
+plt.title('First reset')
+plt.show()
 
 for i in range(1000):
     action, _states = model.predict(obs, deterministic=True)
     obs, _ = env.reset()
-    x = obs["observation"][:160,:,:] - obs["observation"][160:,:,:]
 
-    fig, ax = plt.subplots(1,2)
-    ax[0].imshow(obs["observation"].reshape(90,320,3))
-    ax[1].imshow(x.reshape(90,160,3))
+    plt.imshow(obs["observation"].reshape(90,320,3))
+    plt.title('Subsequent resets')
     plt.show()
 
     # print(action)
