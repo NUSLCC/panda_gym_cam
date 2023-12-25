@@ -78,7 +78,7 @@ class Identity(nn.Module):
 		self.out_dim = out_dim
 	
 	def forward(self, x):
-	#	print(f'Identity projection input/output: {x.shape}')
+		print(f'Identity projection input/output: {x.shape}')
 		return x
 
 
@@ -493,6 +493,8 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		if self.concatenate:
 			# Concatenate features along channel dimension
 			x = torch.cat((x1, x2), dim=1) 
+			print(f"x1 shape bef self.concat: {x1.shape} and x2 shape {x2.shape}")
+			print(f"x shape aft self.concat: {x.shape}")
 		else:
 			x = x1 + x2 
 
@@ -503,7 +505,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 			x = x.detach()
 
 		x = self.projection(x)
-		
+				
 		return x
     
 class CustomCombinedExtractorCrossAttentionORG(BaseFeaturesExtractor):
@@ -631,6 +633,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                 )
 
                 extractors[key] = self.output
+                print(f"FEATURES DIM: {features_dim}")
                 total_concat_size += features_dim
             else:
                 extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
@@ -652,6 +655,13 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                 print(f'KEY SHAPE: {observations[key].shape}')
                 x1 = observations[key][:, :, :90, :] # first half
                 x2 = observations[key][:, :, 90:, :] # second half
+
+                fig, ax = plt.subplots(1,3)
+                ax[0].imshow(x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
+                ax[1].imshow(x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
+                ax[2].imshow(observations[key].squeeze(0).detach().cpu().numpy().reshape(180,160,3))
+                plt.show()
+
                 encoded_tensor_list.append(extractor(x1, x2))
             else:
                 encoded_tensor_list.append(extractor(observations[key]))
