@@ -5,6 +5,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from gymnasium.utils import seeding
+import matplotlib.pyplot as plt
 
 from panda_gym.pybullet import PyBullet
 
@@ -450,6 +451,15 @@ class RobotCamTaskEnv(gym.Env):
         else: # only pass in static cam
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
             observation = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
+
+        fig, ax = plt.subplots(1, 3)
+        ax[0].imshow(observation) 
+        ax[1].imshow(robot_obs.reshape(90,160,3))
+        ax[2].imshow(task_obs.reshape(90,160,3))
+        ax[0].set_title('Observation core.py')
+        ax[1].set_title('Robot obs core.py')
+        ax[2].set_title('Task obs core.py')
+        plt.show()
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
