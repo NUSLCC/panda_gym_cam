@@ -13,7 +13,7 @@ model = SAC.load("sac_cross_attention_panda", env=env)
 
 obs, _ = env.reset()
 
-plt.imshow(obs["observation"].reshape(180,160,3))
+plt.imshow(obs["observation"])
 plt.title('First reset')
 plt.show()
 
@@ -28,7 +28,7 @@ for i in range(1000):
     
     obs, _ = env.reset()
 
-    plt.imshow(obs["observation"].reshape(180,160,3))
+    plt.imshow(obs["observation"])
     plt.title('Subsequent resets')
     plt.show()
     #obs, reward, terminated, truncated, info = env.step(action)

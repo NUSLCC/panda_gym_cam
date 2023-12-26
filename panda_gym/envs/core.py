@@ -452,6 +452,7 @@ class RobotCamTaskEnv(gym.Env):
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
             observation = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
 
+        print(f"robot obs shape in core.py: {robot_obs.shape} and {task_obs.shape}") # originally 160, 90, 3
         fig, ax = plt.subplots(1, 3)
         ax[0].imshow(observation) 
         ax[1].imshow(robot_obs.reshape(90,160,3))
