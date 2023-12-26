@@ -444,7 +444,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		print(f"Shape before showing: {org_img_x2.squeeze(0).permute(1,2,0).detach().cpu().numpy().shape}")
 
 		fig, ax = plt.subplots(1, 2)
-		ax[0].imshow(org_img_x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 1st person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
+		ax[0].imshow(org_img_x1.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()) # Original 1st person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
 		ax[1].imshow(heatmap, cmap='inferno')
 		ax[0].set_title('1st person image')
 		ax[1].set_title('Heatmap')
@@ -480,7 +480,7 @@ class MultiViewCrossAttentionEncoderModified(nn.Module):
 		heatmap = attention_weights_2
 
 		fig, ax = plt.subplots(1, 2)
-		ax[0].imshow(org_img_x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3)) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
+		ax[0].imshow(org_img_x2.squeeze(0).permute(1, 2, 0).detach().cpu().numpy()) # Original 3rd person image convert from (1, 3, 90, 160) to (90, 160, 3) --> H,W,C
 		ax[1].imshow(heatmap, cmap='inferno')
 		ax[0].set_title('3rd person image')
 		ax[1].set_title('Heatmap')
@@ -650,6 +650,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
         encoded_tensor_list = []
 
         # self.extractors contain nn.Modules that do all the processing.
+        print(f"Self extractor items: {self.extractors.items}")
         for key, extractor in self.extractors.items():
             if key == "observation":
                 print(f'KEY SHAPE: {observations[key].shape}')
@@ -657,11 +658,11 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                 x2 = observations[key][:, :, 90:, :] # second half
 
                 fig, ax = plt.subplots(1,3)
-                ax[0].imshow(observations[key].squeeze(0).detach().cpu().numpy().reshape(180,160,3))
+                ax[0].imshow(observations[key].squeeze(0).permute(1, 2, 0).detach().cpu().numpy())
                 ax[0].set_title('Observation image in forward pass')
-                ax[1].imshow(x1.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
+                ax[1].imshow(x1.squeeze(0).permute(1, 2, 0).detach().cpu().numpy())
                 ax[1].set_title('Active image in forward pass')
-                ax[2].imshow(x2.squeeze(0).detach().cpu().numpy().reshape(90,160,3))
+                ax[2].imshow(x2.squeeze(0).permute(1, 2, 0).detach().cpu().numpy())
                 ax[2].set_title('Static image in forward pass')
                 plt.show()
 
