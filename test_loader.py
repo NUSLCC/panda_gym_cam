@@ -10,11 +10,10 @@ env = gym.make('PandaReachCam-v3', render_mode="human", control_type="joints") #
 # HER must be loaded with the env
 model = SAC.load("sac_her_panda", env=env)
 
-print('bef obs')
 obs, _ = env.reset()
 # print(obs['observation'])
 
-plt.imshow(obs["observation"].reshape(90,320,3))
+plt.imshow(obs["observation"])
 plt.title('First reset')
 plt.show()
 
@@ -22,7 +21,7 @@ for i in range(1000):
     action, _states = model.predict(obs, deterministic=True)
     obs, _ = env.reset()
 
-    plt.imshow(obs["observation"].reshape(90,320,3))
+    plt.imshow(obs["observation"])
     plt.title('Subsequent resets')
     plt.show()
 
