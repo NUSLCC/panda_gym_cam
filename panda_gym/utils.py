@@ -11,57 +11,72 @@ import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from gymnasium import spaces
 
-class CustomFeaturesExtractor(BaseFeaturesExtractor):
-    def __init__(self, observation_space: spaces.Box, features_dim: int = 256):
+class CrossAttention(BaseFeaturesExtractor):
+    def __init__(self, observation_space: spaces.Box, features_dim: int = 7):
         super().__init__(observation_space, features_dim)
         self.num_channels = 3
         self.num_heads = 3
         self.num_blocks = 1
-        self.simplecnn_module = SimpleCNN(3, 3)
         self.unidirectional_attention_module = UnidirectionalAttentionModule(self.num_channels, self.num_heads, self.num_blocks)
-    
+
     def forward(self, observations) -> torch.Tensor:
         together = observations["observation"]
-        a = together.shape[0]
-        local_source = together[:int(a/2)]
-        global_source = together[int(a/2):]
+        # print(together.shape)
+        a = together.shape[2]
+        local_source = together[:,:,:int(a/2)]
+        global_source = together[:,:,int(a/2):]
         output_local = self.unidirectional_attention_module(local_source, global_source)
-        print(output_local.shape)
-        return output_local
+        output_global = self.unidirectional_attention_module(global_source, local_source)
+        # print(output_local.shape)
+        # print(output_global.shape)
+        output = torch.cat((output_local, output_global), 2)
+        # print(output.shape)
+        return output
 
-# class CustomFeaturesExtractor(BaseFeaturesExtractor):
-#     def __init__(self, observation_space: spaces.Box, features_dim: int = 256):
-#         super().__init__(observation_space, features_dim)
-#         self.num_channels = 3
-#         self.num_heads = 3
-#         self.num_blocks = 1
-#         self.simplecnn_module = SimpleCNN(3, 3)
-#         self.unidirectional_attention_module = UnidirectionalAttentionModule(self.num_channels, self.num_heads, self.num_blocks)
+class CustomFeaturesExtractor(BaseFeaturesExtractor):
+    def __init__(self, observation_space: spaces.Box, features_dim: int = 7):
+        super().__init__(observation_space, features_dim)
+        n_input_channels = observation_space["observation"].shape[0]
+        self.cross = CrossAttention(observation_space, features_dim)
+        self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute shape by doing one forward pass
+        with torch.no_grad():
+            n_flatten = self.cnn(torch.as_tensor(observation_space["observation"].sample()[None]).float()).shape[1]
+
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+
+    def forward(self, observations) -> torch.Tensor:
+        #print("observation:", observations["observation"].shape)
+        pre = self.cross(observations)
+        #print("After cross:", pre.shape)
+        mid = self.cnn(pre)
+        #print("After cnn", mid.shape)
+        output = self.linear(mid)
+        #print("After linear",output.shape)
+        return output
     
-#     def forward(self, observations) -> torch.Tensor:
-#         together = observations["observation"]
-#         a = together.shape[0]
-#         local_source = together[:int(a/2)]
-#         global_source = together[int(a/2):]
-#         output_local = self.unidirectional_attention_module(local_source, global_source)
-#         print(output_local.shape)
-#         return output_local
-    
-class SimpleCNN(nn.Module):
-    def __init__(self, in_channels, out_channels, inside_channels=32, num_layers=1):
-        super(SimpleCNN, self).__init__()
+# class SimpleCNN(nn.Module):
+#     def __init__(self, in_channels, out_channels, inside_channels=32, num_layers=1):
+#         super(SimpleCNN, self).__init__()
 
-        self.layers = [nn.Conv2d(in_channels, inside_channels, kernel_size=3, stride=1, padding=1), nn.ReLU(inplace=True)]
-        for _ in range(0, num_layers):
-            self.layers.append(nn.Conv2d(inside_channels, inside_channels, kernel_size=3, stride=1, padding=1))
-            self.layers.append(nn.ReLU(inplace=True))
-        self.layers.append(nn.Conv2d(inside_channels, out_channels, kernel_size=3, stride=1, padding=1))
-        self.layers.append(nn.ReLU(inplace=True))
-        self.features = nn.Sequential(*self.layers)
+#         self.layers = [nn.Conv2d(in_channels, inside_channels, kernel_size=3, stride=1, padding=1), nn.ReLU(inplace=True)]
+#         for _ in range(0, num_layers):
+#             self.layers.append(nn.Conv2d(inside_channels, inside_channels, kernel_size=3, stride=1, padding=1))
+#             self.layers.append(nn.ReLU(inplace=True))
+#         self.layers.append(nn.Conv2d(inside_channels, out_channels, kernel_size=3, stride=1, padding=1))
+#         self.layers.append(nn.ReLU(inplace=True))
+#         self.features = nn.Sequential(*self.layers)
 
-    def forward(self, x):
-        x = self.features(x)
-        return x
+#     def forward(self, x):
+#         x = self.features(x)
+#         return x
 
 
 class UnidirectionalAttentionModule(nn.Module):

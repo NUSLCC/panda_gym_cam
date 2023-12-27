@@ -436,16 +436,17 @@ class RobotCamTaskEnv(gym.Env):
                 yaw=self.render_yaw,
                 pitch=self.render_pitch,
             )
-        self.model = CrossViT(image_size = 224, channels = 3, num_classes = 2408448)
+        # self.model = CrossViT(image_size = 224, channels = 3, num_classes = 2408448)
 
     def _get_obs(
             self, 
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
-        #robot_obs = self.robot.get_obs().astype(np.uint8)  # active camera
+        robot_obs = self.robot.get_obs().astype(np.uint8)  # active camera
         task_obs = self.task.get_obs().astype(np.uint8)  # static camera
-        #observation = np.concatenate([robot_obs, task_obs])
-        observation = self.model(task_obs)
+        observation = np.concatenate([robot_obs, task_obs])
+        #print(observation.shape)
+        #observation = self.model(task_obs)
         #observation = task_obs
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
@@ -455,6 +456,8 @@ class RobotCamTaskEnv(gym.Env):
 
         return {
             "observation": observation,
+            # "observation_rob": robot_obs,
+            # "observation_task": task_obs,
             "achieved_goal": current_joint_angles,
             "desired_goal": desired_joint_angles
         }
@@ -516,20 +519,9 @@ class RobotCamTaskEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
         self.sim.step()
-     #   contact_points = self.task.is_in_collision()
+        # contact_points = self.task.is_in_collision()
         object_in_active_cam = bool(self.robot.object_in_cam())
         observation = self._get_obs(object_in_active_cam)
-
-        # observation_shape = observation["observation"].shape # Try this for dynamic observation space
-        # achieved_goal_shape = observation["achieved_goal"].shape 
-        # desired_goal_shape = observation["desired_goal"].shape 
-        # self.observation_space = spaces.Dict( 
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-        #     )
-        # )
 
         # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))

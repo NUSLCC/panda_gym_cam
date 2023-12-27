@@ -148,7 +148,7 @@ class ReachCamObstacle(Task):
     def render_from_stationary_cam(
         self,
         # cam_width: int = 400,
-        # cam_height: int = 224,
+        # cam_height: int = 90,
         cam_width: int = 160,
         cam_height: int = 90,
     ) -> Optional[np.ndarray]:
