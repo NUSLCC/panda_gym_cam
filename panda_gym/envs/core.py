@@ -447,20 +447,20 @@ class RobotCamTaskEnv(gym.Env):
         task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
         if object_in_cam: # pass in both active and static camera img
-            observation = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
+            observation = np.concatenate([robot_obs, task_obs])
         else: # only pass in static cam
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
-            observation = np.concatenate([robot_obs.reshape(90,160,3), task_obs.reshape(90,160,3)])
+            observation = np.concatenate([robot_obs, task_obs])
 
-        print(f"robot obs shape in core.py: {robot_obs.shape} and {task_obs.shape}") # originally 160, 90, 3
-        fig, ax = plt.subplots(1, 3)
-        ax[0].imshow(observation) 
-        ax[1].imshow(robot_obs.reshape(90,160,3))
-        ax[2].imshow(task_obs.reshape(90,160,3))
-        ax[0].set_title('Observation core.py')
-        ax[1].set_title('Robot obs core.py')
-        ax[2].set_title('Task obs core.py')
-        plt.show()
+        # print(f"robot obs shape in core.py: {robot_obs.shape} and {task_obs.shape}") # originally 160, 90, 3
+        # fig, ax = plt.subplots(1, 3)
+        # ax[0].imshow(observation) 
+        # ax[1].imshow(robot_obs)
+        # ax[2].imshow(task_obs)
+        # ax[0].set_title('Observation core.py')
+        # ax[1].set_title('Robot obs core.py')
+        # ax[2].set_title('Task obs core.py')
+        # plt.show()
 
       #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
