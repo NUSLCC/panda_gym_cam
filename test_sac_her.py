@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from attention.modules import CustomCombinedExtractorCrossAttention
+from attention.modules import CustomCombinedExtractorCrossAttention, CustomCombinedExtractorCrossAttentionORG
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -21,7 +21,7 @@ if __name__=="__main__":
                 policy_kwargs=dict(
                     features_extractor_class=CustomCombinedExtractorCrossAttention,
                     # output size of custom combined extractor = image features + achieved goal + desired goal. If shared cnn layers = 11, use 30528. If shared cnn layers=8, use 45312. 
-                    features_extractor_kwargs=dict(features_dim=30528), 
+                    features_extractor_kwargs=dict(features_dim=3584), 
                     net_arch=[512, 512, 512], 
                     n_critics=2)
     )
