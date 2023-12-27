@@ -8,6 +8,7 @@ from gymnasium.utils import seeding
 
 from panda_gym.pybullet import PyBullet
 
+from panda_gym.crossvit import CrossViT
 
 class PyBulletRobot(ABC):
     """Base class for robot env.
@@ -408,13 +409,11 @@ class RobotCamTaskEnv(gym.Env):
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
-     #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
                 achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
                 desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-           #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
             )
         )
         self.action_space = self.robot.action_space
@@ -437,14 +436,12 @@ class RobotCamTaskEnv(gym.Env):
                 yaw=self.render_yaw,
                 pitch=self.render_pitch,
             )
+        # self.model = CrossViT(image_size = 224, channels = 3, num_classes = 2408448)
 
-    def _get_state_obs(self):
-        raise NotImplementedError('_get_state_obs has not been implemented for this task!')
-
-    def _get_achieved_goal(self):
-        raise NotImplementedError('_get_achieved_goal has not been implemented for this task!')
-
-    def _get_obs(self, object_in_cam: bool = True) -> Dict[str, np.ndarray]:
+    def _get_obs(
+            self, 
+            object_in_cam: bool = True
+            ) -> Dict[str, np.ndarray]:
         robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
         task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
@@ -453,9 +450,9 @@ class RobotCamTaskEnv(gym.Env):
         else: # only pass in static cam
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
             observation = np.concatenate([robot_obs, task_obs])
-        # print(f'Observation shape: {observation.shape}')
+        #print(f'Observation shape: {observation.shape}')
 
-        # achieved_goal = self.task.get_achieved_goal().astype(np.float32)
+      #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
         desired_joint_angles = self.robot.inverse_kinematics(
@@ -464,6 +461,8 @@ class RobotCamTaskEnv(gym.Env):
 
         return {
             "observation": observation,
+            # "observation_rob": robot_obs,
+            # "observation_task": task_obs,
             "achieved_goal": current_joint_angles,
             "desired_goal": desired_joint_angles
         }
@@ -512,6 +511,7 @@ class RobotCamTaskEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
         self.sim.step()
+     #   contact_points = self.task.is_in_collision()
         object_in_active_cam = bool(self.robot.object_in_cam())
         observation = self._get_obs(object_in_active_cam)
 
