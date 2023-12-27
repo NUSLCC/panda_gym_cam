@@ -693,26 +693,44 @@ class SharedCNNPhil(nn.Module):
 		return self.cnn(x)
 	
 class IntegratorPhil(nn.Module):
-	def __init__(self, in_shape_1, in_shape_2, num_filters=32, concatenate=True):
+	def __init__(self, obs_shape, in_shape_1, in_shape_2, num_filters=32):
 		super().__init__()
-		self.relu = nn.ReLU()
-		self.flatten = nn.Flatten()
-		if concatenate:
-			self.conv1 = nn.Conv2d(in_shape_1[0]+in_shape_2[0], num_filters, (1,1))
-		else:
-			self.conv1 = nn.Conv2d(in_shape_1[0], num_filters, (1,1))
+	#	print(f"Integrator in shape: {in_shape_1[0]}") # gives 64
+		self.integrator = nn.Sequential(
+            nn.Conv2d(in_shape_1[0]+in_shape_2[0], num_filters, (1,1)),
+            nn.ReLU(),
+			nn.Flatten()
+			)
+	
+		self.out_shape = _get_out_shape(obs_shape, self.integrator)
 		self.apply(orthogonal_init)
 
 	def forward(self, x):
-		x = self.flatten(self.conv1(self.relu(x)))
+		x = self.integrator(x)
+		return x
+
+class LinearLayersPhil(nn.Module):
+	def __init__(self, in_shape, features_dim):
+		super().__init__()
+
+		#print(f"In_shape for Linear is: {in_shape}")
+		self.linear = nn.Sequential(
+			nn.Linear(in_shape[0], 2*in_shape[0]),
+			nn.ReLU(),
+			nn.Linear(2*in_shape[0], features_dim),
+			nn.ReLU()
+		)
+		self.apply(orthogonal_init)
+
+	def forward(self, x):
+		x = self.linear(x)
 		return x
 	
-
 class MultiViewCrossAttentionEncoderPhil(nn.Module):
 	"""
 	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
 	"""
-	def __init__(self, shared_cnn_1, shared_cnn_2, integrator, attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None, concatenate=True):
+	def __init__(self, shared_cnn_1, shared_cnn_2, linear, integrator, attention1=None, attention2=None, mlp1=None, mlp2=None, norm1=None, norm2=None, concatenate=True):
 		super().__init__()
 		self.shared_cnn_1 = shared_cnn_1
 		self.shared_cnn_2 = shared_cnn_2
@@ -720,6 +738,7 @@ class MultiViewCrossAttentionEncoderPhil(nn.Module):
 		self.attention1 = attention1
 		self.attention2 = attention2
 		self.integrator = integrator
+		self.linear = linear
 
 		self.mlp1 = mlp1
 		self.norm1 = norm1
@@ -757,7 +776,10 @@ class MultiViewCrossAttentionEncoderPhil(nn.Module):
 		else:
 			x = x1 + x2 
 
+	#	print(f"X SHAPE AFT CONCAT: {x.shape}") # gives torch.Size([16, 128, 7, 16])
+
 		x = self.integrator(x)
+		x = self.linear(x)
 
 		return x
 
@@ -780,7 +802,8 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
 				
                 shared_cnn_1 = SharedCNNPhil(obs_shape=(3,90,160))
                 shared_cnn_2 = SharedCNNPhil(obs_shape=(3,90,160))
-                integrator = IntegratorPhil(shared_cnn_1.out_shape, shared_cnn_2.out_shape)
+                integrator = IntegratorPhil((128, 7, 16), shared_cnn_1.out_shape, shared_cnn_2.out_shape)
+                linear = LinearLayersPhil(integrator.out_shape, features_dim)
                 mlp_hidden_dim = int(shared_cnn_1.out_shape[0] * 4)
 
                 attention_1 = AttentionBlock(dim=shared_cnn_1.out_shape, contextualReasoning=True)
@@ -802,6 +825,7 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
                     mlp2 = mlp2,
                     norm1 = norm1,
                     norm2 = norm2,
+					linear = linear
                 )
 
                 extractors[key] = self.output
