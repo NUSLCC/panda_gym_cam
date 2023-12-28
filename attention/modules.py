@@ -679,6 +679,7 @@ class SharedCNNPhil(nn.Module):
 		super().__init__()
 		n_input_channels = obs_shape[0]
 		self.cnn = nn.Sequential(
+			NormalizeImg(mean_zero=False),
             nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
@@ -693,7 +694,7 @@ class SharedCNNPhil(nn.Module):
 		return self.cnn(x)
 	
 class IntegratorPhil(nn.Module):
-	def __init__(self, obs_shape, in_shape_1, in_shape_2, num_filters=32):
+	def __init__(self, obs_shape, in_shape_1, in_shape_2, num_filters=128):
 		super().__init__()
 	#	print(f"Integrator in shape: {in_shape_1[0]}") # gives 64
 		self.integrator = nn.Sequential(
@@ -713,12 +714,9 @@ class LinearLayersPhil(nn.Module):
 	def __init__(self, in_shape, features_dim):
 		super().__init__()
 
-		#print(f"In_shape for Linear is: {in_shape}")
+		#print(f"In_shape for Linear is: {in_shape}") # 14336
 		self.linear = nn.Sequential(
-			nn.Linear(in_shape[0], 2*in_shape[0]),
-			nn.ReLU(),
-			nn.Linear(2*in_shape[0], features_dim),
-			nn.ReLU()
+			nn.Linear(in_shape[0], 256),
 		)
 		self.apply(orthogonal_init)
 
