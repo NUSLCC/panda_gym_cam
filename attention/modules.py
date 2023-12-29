@@ -684,8 +684,7 @@ class SharedCNNPhil(nn.Module):
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-            nn.ReLU()
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0)
         )
 		self.out_shape = _get_out_shape(obs_shape, self.cnn)
 		self.apply(orthogonal_init)
@@ -694,12 +693,14 @@ class SharedCNNPhil(nn.Module):
 		return self.cnn(x)
 	
 class IntegratorPhil(nn.Module):
-	def __init__(self, obs_shape, in_shape_1, in_shape_2, num_filters=128):
+	def __init__(self, obs_shape, in_shape_1, in_shape_2, num_filters=32):
 		super().__init__()
 	#	print(f"Integrator in shape: {in_shape_1[0]}") # gives 64
 		self.integrator = nn.Sequential(
+			nn.ReLU(),
             nn.Conv2d(in_shape_1[0]+in_shape_2[0], num_filters, (1,1)),
-            nn.ReLU(),
+			nn.ReLU(),
+			nn.Conv2d(num_filters, num_filters, 3, stride = 1),
 			nn.Flatten()
 			)
 	
@@ -714,7 +715,7 @@ class LinearLayersPhil(nn.Module):
 	def __init__(self, in_shape, features_dim):
 		super().__init__()
 
-		#print(f"In_shape for Linear is: {in_shape}") # 14336
+		# print(f"In_shape for Linear is: {in_shape}") # 2240
 		self.linear = nn.Sequential(
 			nn.Linear(in_shape[0], 256),
 		)
