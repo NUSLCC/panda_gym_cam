@@ -10,7 +10,40 @@ import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from gymnasium import spaces
+from timm import create_model
+from PIL import Image
 
+class CustomFeaturesExtractor(BaseFeaturesExtractor):
+    """
+    :param observation_space: (gym.Space)
+    :param features_dim: (int) Number of features extracted.
+        This corresponds to the number of unit for the last layer.
+    """
+
+    def __init__(self, observation_space: spaces.Box, device_id=0):
+        super().__init__(observation_space, features_dim = 1000)
+        self.model_name = "vit_base_patch16_224"
+        self.model = create_model(self.model_name, pretrained=True)
+        self.preprocess = transforms.Compose([
+            transforms.ToPILImage(), 
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),])
+        self.device = torch.device("cuda:"+str(device_id))
+        self.model = self.model.to(self.device)
+
+
+    def forward(self, observations_dict) -> torch.Tensor:
+        observations = observations_dict["observation"].to(self.device)
+        #print("observations:", observations.shape, observations.type())
+        
+        input_images_preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
+        #print("preprocessed:", input_images_preprocessed.shape, input_images_preprocessed.type())
+        
+        with torch.no_grad():
+            self.model.eval()
+            output = self.model(input_images_preprocessed.to(self.device))
+        #print("output:", output.shape, output.type())
+        return output
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
