@@ -27,10 +27,10 @@ if __name__=="__main__":
                 )
 
 
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cross_att_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_vit_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
     model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_her_panda_cross_att")
+    model.save("sac_her_panda_vit")

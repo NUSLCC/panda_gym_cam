@@ -8,8 +8,6 @@ from gymnasium.utils import seeding
 
 from panda_gym.pybullet import PyBullet
 
-from panda_gym.crossvit import CrossViT
-
 class PyBulletRobot(ABC):
     """Base class for robot env.
 
@@ -436,7 +434,6 @@ class RobotCamTaskEnv(gym.Env):
                 yaw=self.render_yaw,
                 pitch=self.render_pitch,
             )
-        # self.model = CrossViT(image_size = 224, channels = 3, num_classes = 2408448)
 
     def _get_obs(
             self, 
