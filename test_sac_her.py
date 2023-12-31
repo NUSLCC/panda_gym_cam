@@ -10,7 +10,7 @@ from panda_gym.utils import CustomFeaturesExtractor
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
     env_id = "PandaReachCamJoints-v3"
-    num_cpu = 16
+    num_cpu = 1
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
 
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=512, gamma=0.95, learning_rate=1e-4, verbose=1, 
