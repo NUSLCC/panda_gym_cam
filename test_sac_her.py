@@ -10,7 +10,7 @@ from panda_gym.utils import CustomFeaturesExtractor
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
     env_id = "PandaReachCamJoints-v3"
-    num_cpu = 1
+    num_cpu = 16
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
 
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=512, gamma=0.95, learning_rate=1e-4, verbose=1, 
@@ -26,7 +26,7 @@ if __name__=="__main__":
                     n_critics=2)
                 )
 
-
+    #print(model.policy)
     tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_vit_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
