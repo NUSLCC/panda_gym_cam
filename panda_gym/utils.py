@@ -23,18 +23,19 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
 
     def __init__(self, observation_space: spaces, features_dim = 256, device_id=0):
         super().__init__(observation_space, features_dim = features_dim)
-        # self.model_name = "vit_base_patch16_224"
-        # self.model = create_model(self.model_name, pretrained=True)
-        self.model = ViT('B_16_imagenet1k', pretrained=True)
         self.device = torch.device("cuda:"+str(device_id))
+        # self.model_name = "vit_base_patch16_224"
+        self.model_name = "mobilevitv2_150.cvnets_in1k"
+        self.model = create_model(self.model_name, pretrained=True)
+        # self.model = ViT('B_16_imagenet1k', pretrained=True)
         self.model = self.model.to(self.device)
-        
+        self.model.eval()
         for param in self.model.parameters():
             param.requires_grad = False
 
         self.preprocess = transforms.Compose([
             transforms.ToPILImage(), 
-            transforms.Resize((384, 384)),
+            transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize(0.5, 0.5),])
         self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU())
@@ -47,7 +48,6 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
         # print("preprocessed:", input_images_preprocessed.shape, input_images_preprocessed.type())
         
         with torch.no_grad():
-            self.model.eval()
             output = self.model(input_images_preprocessed.to(self.device))
             # print("output:", output.shape, output.type())
             output = self.linear(output)
