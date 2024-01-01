@@ -24,10 +24,14 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: spaces, features_dim = 256, device_id=0):
         super().__init__(observation_space, features_dim = features_dim)
         # self.model_name = "vit_base_patch16_224"
-        #self.model = create_model(self.model_name, pretrained=True)
+        # self.model = create_model(self.model_name, pretrained=True)
         self.model = ViT('B_16_imagenet1k', pretrained=True)
         self.device = torch.device("cuda:"+str(device_id))
         self.model = self.model.to(self.device)
+        
+        for param in self.model.parameters():
+            param.requires_grad = False
+
         self.preprocess = transforms.Compose([
             transforms.ToPILImage(), 
             transforms.Resize((384, 384)),
