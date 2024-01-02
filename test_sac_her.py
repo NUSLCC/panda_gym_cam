@@ -5,8 +5,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from panda_gym.utils import CustomFeaturesExtractor
-from panda_gym.utils import NatureCNN
+from panda_gym.utils import CustomCombinedExtractor
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -21,18 +20,18 @@ if __name__=="__main__":
                 replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for SAC
                 policy_kwargs=dict(
-                    features_extractor_class=NatureCNN,
+                    features_extractor_class=CustomCombinedExtractor,
                     # features_extractor_kwargs=dict(device_id=0),
-                    features_extractor_kwargs=dict(features_dim = 512),
+                    features_extractor_kwargs=dict(cnn_output_dim = 512),
                     net_arch=[512, 512, 512], 
                     n_critics=2)
                 )
 
-    #print(model.policy)
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_%H_%M_%d')
-    # set up logger
-    new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
-    model.set_logger(new_logger)
+    print(model.policy)
+    # tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_%H_%M_%d')
+    # # set up logger
+    # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+    # model.set_logger(new_logger)
 
-    model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_her_panda_cnn")
+    # model.learn(total_timesteps=700_000, progress_bar=True)
+    # model.save("sac_her_panda_cnn")

@@ -10,12 +10,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
+from stable_baselines3.common.type_aliases import TensorDict
+from typing import Dict, List, Tuple, Type, Union
 from gymnasium import spaces
+import gymnasium as gym
 from timm import create_model
 from PIL import Image
 from pytorch_pretrained_vit import ViT
 
-class CustomFeaturesExtractor(BaseFeaturesExtractor):
+class MobileViT(BaseFeaturesExtractor):
     """
     :param observation_space: (gym.Space)
     :param features_dim: (int) Number of features extracted.
@@ -56,6 +59,7 @@ class CustomFeaturesExtractor(BaseFeaturesExtractor):
             # print("output:", output.shape, output.type())
         return output
 
+
 class NatureCNN(BaseFeaturesExtractor):
     """
     CNN from DQN Nature paper:
@@ -74,14 +78,17 @@ class NatureCNN(BaseFeaturesExtractor):
 
     def __init__(
         self,
-        observation_space: spaces.Box,
+        observation_space: gym.Space,
         features_dim: int = 512,
         normalized_image: bool = False,
     ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "NatureCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
         super().__init__(observation_space, features_dim)
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
-        observation_space = observation_space["observation"]
         assert is_image_space(observation_space, check_channels=False, normalized_image=normalized_image), (
             "You should use NatureCNN "
             f"only with images not with {observation_space}\n"
@@ -111,8 +118,61 @@ class NatureCNN(BaseFeaturesExtractor):
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        observations = observations["observation"]
         return self.linear(self.cnn(observations))
+
+
+class CustomCombinedExtractor(BaseFeaturesExtractor):
+    """
+    Combined features extractor for Dict observation spaces.
+    Builds a features extractor for each key of the space. Input from each space
+    is fed through a separate submodule (CNN or MLP, depending on input shape),
+    the output features are concatenated and fed through additional MLP network ("combined").
+
+    :param observation_space:
+    :param cnn_output_dim: Number of features to output from each CNN submodule(s). Defaults to
+        256 to avoid exploding network sizes.
+    :param vit_output_dim: Number of features to output from each ViT submodule(s). Defaults to
+        256 to avoid exploding network sizes.
+    :param normalized_image: Whether to assume that the image is already normalized
+        or not (this disables dtype and bounds checks): when True, it only checks that
+        the space is a Box and has 3 dimensions.
+        Otherwise, it checks that it has expected dtype (uint8) and bounds (values in [0, 255]).
+    """
+
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        cnn_output_dim: int = 256,
+        vit_output_dim: int = 256,
+        normalized_image: bool = False,
+    ) -> None:
+        # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
+        super().__init__(observation_space, features_dim=1)
+
+        extractors: Dict[str, nn.Module] = {}
+
+        total_concat_size = 0
+        for key, subspace in observation_space.spaces.items():
+            if is_image_space(subspace, normalized_image=normalized_image):
+                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
+                total_concat_size += cnn_output_dim
+            else:
+                # The observation key is a vector, flatten it if needed
+                extractors[key] = nn.Flatten()
+                total_concat_size += get_flattened_obs_dim(subspace)
+
+        self.extractors = nn.ModuleDict(extractors)
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        return torch.cat(encoded_tensor_list, dim=1)
+
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
