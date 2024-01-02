@@ -26,11 +26,11 @@ if __name__=="__main__":
                     n_critics=2)
                 )
 
-    print(model.policy)
-    # tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_%H_%M_%d')
-    # # set up logger
-    # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
-    # model.set_logger(new_logger)
+    # print(model.policy)
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_%H_%M_%d')
+    # set up logger
+    new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+    model.set_logger(new_logger)
 
-    # model.learn(total_timesteps=700_000, progress_bar=True)
-    # model.save("sac_her_panda_cnn")
+    model.learn(total_timesteps=700_000, progress_bar=True)
+    model.save("sac_her_panda_cnn")
