@@ -29,8 +29,6 @@ class ReachCam(Task):
         self.get_ee_position = get_ee_position
         self.goal_range_low = None
         self.goal_range_high = None
-        self.cam_width: int = 320
-        self.cam_height: int = 180
         self.cam_link = 13
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
@@ -103,7 +101,7 @@ class ReachCam(Task):
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
-        rgb_img = np.array(rgb_img).reshape(cam_height, cam_width, 4)[:, :, :3]
+        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
         return rgb_img
 
     def get_achieved_goal(self) -> np.ndarray:
