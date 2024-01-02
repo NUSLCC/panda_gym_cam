@@ -74,17 +74,14 @@ class NatureCNN(BaseFeaturesExtractor):
 
     def __init__(
         self,
-        observation_space: spaces,
+        observation_space: spaces.Box,
         features_dim: int = 512,
         normalized_image: bool = False,
     ) -> None:
-        assert isinstance(observation_space, spaces.Box), (
-            "NatureCNN must be used with a gym.spaces.Box ",
-            f"observation space, not {observation_space}",
-        )
         super().__init__(observation_space, features_dim)
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
+        observation_space = observation_space["observation"]
         assert is_image_space(observation_space, check_channels=False, normalized_image=normalized_image), (
             "You should use NatureCNN "
             f"only with images not with {observation_space}\n"
