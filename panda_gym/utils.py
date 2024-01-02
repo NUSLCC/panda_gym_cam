@@ -16,51 +16,6 @@ from gymnasium import spaces
 import gymnasium as gym
 from timm import create_model
 from PIL import Image
-from pytorch_pretrained_vit import ViT
-
-
-class MobileViT(BaseFeaturesExtractor):
-    """
-    :param observation_space: (gym.Space)
-    :param features_dim: (int) Number of features extracted.
-        This corresponds to the number of unit for the last layer.
-    """
-
-    def __init__(
-            self, 
-            observation_space: spaces, 
-            features_dim = 256, 
-            device_id=0):
-        super().__init__(observation_space, features_dim = features_dim)
-        self.device = torch.device("cuda:"+str(device_id))
-        # self.model_name = "vit_base_patch16_224"
-        self.model_name = "mobilevitv2_150.cvnets_in1k"
-        self.model = create_model(self.model_name, pretrained=True)
-        # self.model = ViT('B_16_imagenet1k', pretrained=True)
-        self.model = self.model.to(self.device)
-        self.model.eval()
-        for param in self.model.parameters():
-            param.requires_grad = False
-
-        self.preprocess = transforms.Compose([
-            transforms.ToPILImage(), 
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(0.5, 0.5),])
-        
-        self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU())
-
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        # print("observations:", observations.shape, observations.type())
-        input_images_preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
-        # print("preprocessed:", input_images_preprocessed.shape, input_images_preprocessed.type())
-        
-        with torch.no_grad():
-            output = self.model(input_images_preprocessed.to(self.device))
-            # print("output:", output.shape, output.type())
-            output = self.linear(output)
-            # print("output:", output.shape, output.type())
-        return output
 
 
 class NatureCNN(BaseFeaturesExtractor):
@@ -134,8 +89,6 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
     :param observation_space:
     :param cnn_output_dim: Number of features to output from each CNN submodule(s). Defaults to
         256 to avoid exploding network sizes.
-    :param vit_output_dim: Number of features to output from each ViT submodule(s). Defaults to
-        256 to avoid exploding network sizes.
     :param normalized_image: Whether to assume that the image is already normalized
         or not (this disables dtype and bounds checks): when True, it only checks that
         the space is a Box and has 3 dimensions.
@@ -145,9 +98,8 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: spaces.Dict,
-        vit_output_dim: int = 256,
+        cnn_output_dim: int = 512,
         normalized_image: bool = False,
-        device_id=0,
     ) -> None:
         # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
         super().__init__(observation_space, features_dim=1)
@@ -158,8 +110,8 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         for key, subspace in observation_space.spaces.items():
             # If the subspace is image space like gym.spaces.Box
             if is_image_space(subspace, normalized_image=normalized_image):
-                extractors[key] = MobileViT(subspace, features_dim=vit_output_dim, device_id=device_id)
-                total_concat_size += vit_output_dim
+                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim)
+                total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
                 extractors[key] = nn.Flatten()
