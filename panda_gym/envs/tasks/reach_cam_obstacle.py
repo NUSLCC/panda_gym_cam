@@ -11,7 +11,6 @@ from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
 from panda_gym.utils import sample_object_obstacle_goal
 from panda_gym.utils import colorjitter
-from panda_gym.utils import masked_auto_encoder
 from panda_gym.utils import velocity_calculator
 from panda_gym.utils import sine_velocity
 

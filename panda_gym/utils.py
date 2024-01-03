@@ -1,15 +1,126 @@
-import sys
-import os
-import requests
 import numpy as np
 import math
 import torch
+import torch.nn as nn
 from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
-from mae import models_mae
-from mae.util import pos_embed
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from typing import Dict
+from stable_baselines3.common.type_aliases import TensorDict
+from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
+import gymnasium as gym
+from gymnasium import spaces
+from timm import create_model
+
+
+class MobileViT(BaseFeaturesExtractor):
+    """
+    :param observation_space: (gym.Space)
+    :param features_dim: (int) Number of features extracted.
+        This corresponds to the number of unit for the last layer.
+    """
+
+    def __init__(
+        self, 
+        observation_space: gym.Space, 
+        features_dim: int = 256,
+        normalized_image: bool = False, 
+        device_id: int = 1,
+    ) -> None:
+        super().__init__(observation_space, features_dim = features_dim)
+        assert is_image_space(observation_space, check_channels=False, normalized_image=normalized_image), (
+            "You should use MobileViT "
+            f"only with images not with {observation_space}\n"
+            "(you are probably using `CnnPolicy` instead of `MlpPolicy` or `MultiInputPolicy`)\n"
+            "If you are using a custom environment,\n"
+            "please check it using our env checker:\n"
+            "https://stable-baselines3.readthedocs.io/en/master/common/env_checker.html.\n"
+            "If you are using `VecNormalize` or already normalized channel-first images "
+            "you should pass `normalize_images=False`: \n"
+            "https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html"
+        )
+        self.device = torch.device("cuda:" + str(device_id))
+        self.model_name = "mobilevitv2_150.cvnets_in1k"
+        self.model = create_model(self.model_name, pretrained=True)
+        self.model = self.model.to(self.device)
+        self.model.eval()
+        for param in self.model.parameters():
+            param.requires_grad = False
+
+        self.preprocess = transforms.Compose([
+            transforms.ToPILImage(), 
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(0.5, 0.5),])
+        
+        self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU())
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        # print("observations:", observations.shape, observations.type())
+        input_images_preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
+        # print("preprocessed:", input_images_preprocessed.shape, input_images_preprocessed.type())
+        
+        with torch.no_grad():
+            self.model.eval()
+            output = self.model(input_images_preprocessed.to(self.device))
+            # print("output:", output.shape, output.type())
+            # output = self.linear(output)
+            # print("output:", output.shape, output.type())
+        return self.linear(output)
+
+
+class CombinedExtractor(BaseFeaturesExtractor):
+    """
+    Combined features extractor for Dict observation spaces.
+    Builds a features extractor for each key of the space. Input from each space
+    is fed through a separate submodule (CNN or MLP, depending on input shape),
+    the output features are concatenated and fed through additional MLP network ("combined").
+
+    :param observation_space:
+    :param vit_output_dim: Number of features to output from each ViT submodule(s). Defaults to
+        256 to avoid exploding network sizes.
+    :param normalized_image: Whether to assume that the image is already normalized
+        or not (this disables dtype and bounds checks): when True, it only checks that
+        the space is a Box and has 3 dimensions.
+        Otherwise, it checks that it has expected dtype (uint8) and bounds (values in [0, 255]).
+    :param device_id: which GPU will you use, 0 or 1
+    """
+
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        vit_output_dim: int = 256,
+        normalized_image: bool = False,
+        device_id: int = 1,
+    ) -> None:
+        super().__init__(observation_space, features_dim=vit_output_dim)
+
+        extractors: Dict[str, nn.Module] = {}
+
+        total_concat_size = 0
+        for key, subspace in observation_space.spaces.items():
+            if is_image_space(subspace, normalized_image=normalized_image):
+                extractors[key] = MobileViT(subspace, features_dim=vit_output_dim, normalized_image=normalized_image, device_id=device_id)
+                total_concat_size += vit_output_dim
+            else:
+                # The observation key is a vector, flatten it if needed
+                extractors[key] = nn.Flatten()
+                total_concat_size += get_flattened_obs_dim(subspace)
+
+        self.extractors = nn.ModuleDict(extractors)
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        return torch.cat(encoded_tensor_list, dim=1)
+
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
@@ -238,35 +349,6 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     plt.show()
     return jittered_img
 
-def masked_auto_encoder(img):
-    """
-    Applies MAE to the input image
-    Args:
-        RGB image (np.ndarray) of shape of W, H, C.
-    Returns:
-        RGB image (np.ndarray) which includes the reconstruction of decoder of shape of W, H, C.
-    """
-    imagenet_mean = np.array([0.485, 0.456, 0.406])
-    imagenet_std = np.array([0.229, 0.224, 0.225])
-    
-    img = np.array(img).reshape(224,400,3)
-
-    img = Image.fromarray(img).resize((224, 224))
-    img = np.array(img) / 255.
-
-    # normalize by ImageNet mean and std
-    img = img - imagenet_mean
-    img = img / imagenet_std
-
-    plt.rcParams['figure.figsize'] = [5, 5]
-    show_image(torch.tensor(img))
-
-    chkpt_dir = 'mae/mae_visualize_vit_large_ganloss.pth'
-    model_mae_gan = prepare_model(chkpt_dir, 'mae_vit_large_patch16')
-
-    print('MAE with extra GAN loss:')
-    run_one_image(img, model_mae_gan)
-
 
 def show_image(image,title=''):
     # image is [H, W, 3]
@@ -279,14 +361,6 @@ def show_image(image,title=''):
     plt.axis('off')
     return
 
-def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
-    # build model
-    model = getattr(models_mae, arch)()
-    # load model
-    checkpoint = torch.load(chkpt_dir, map_location='cpu')
-    msg = model.load_state_dict(checkpoint['model'], strict=False)
-    print(msg)
-    return model
 
 def run_one_image(img, model):
     imagenet_mean = np.array([0.485, 0.456, 0.406])
