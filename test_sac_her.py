@@ -5,6 +5,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
+from stable_baselines3.common.torch_layers import CombinedExtractor
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -18,13 +19,19 @@ if __name__=="__main__":
                 # Parameters for HER
                 replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for SAC
-                policy_kwargs=dict(net_arch=[512, 512, 512], n_critics=2))
+                policy_kwargs=dict(
+                    features_extractor_class=CombinedExtractor,
+                    features_extractor_kwargs=dict(cnn_output_dim = 256),
+                    net_arch=[512, 512, 512], 
+                    n_critics=2)
+                )
 
-
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_table_%H_%M_%d')
+    # print(model.policy)
+    
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_table_cnn_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
     model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_her_panda")
+    model.save("sac_her_panda_cnn")
