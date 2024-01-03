@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
-from attention.modules import CustomCombinedExtractorCrossAttention, CustomCombinedExtractorCrossAttentionORG
+from attention.modules import CustomCombinedExtractorNature, CustomCombinedExtractorCrossAttention, CustomCombinedExtractorCrossAttentionORG
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
@@ -19,7 +19,7 @@ if __name__=="__main__":
                 buffer_size=600000, replay_buffer_class=DictReplayBuffer,
                 # Parameters for SAC
                 policy_kwargs=dict(
-                    features_extractor_class=CustomCombinedExtractorCrossAttention,
+                    features_extractor_class=CustomCombinedExtractorNature,
                     # output size of custom combined extractor = image features + achieved goal + desired goal. If shared cnn layers = 11, use 30528. If shared cnn layers=8, use 45312. 
                     features_extractor_kwargs=dict(features_dim=256), 
                     net_arch=[512, 512, 512], 
@@ -31,5 +31,5 @@ if __name__=="__main__":
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
-    model.learn(total_timesteps=600_000, progress_bar=True)
-    model.save("sac_cross_attention_panda")
+    model.learn(total_timesteps=700_000, progress_bar=True)
+    model.save("sac_nature_cnn")

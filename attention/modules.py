@@ -754,8 +754,8 @@ class MultiViewCrossAttentionEncoderPhil(nn.Module):
 		# ax[1].imshow(x2[0].permute(1,2,0).detach().cpu().numpy())
 		# plt.show()
 
-		x1 = self.shared_cnn_1(x1) #3rd Person
-		x2 = self.shared_cnn_2(x2)
+		x1 = self.shared_cnn_1(x1) #1st Person
+		x2 = self.shared_cnn_2(x2) #3rd Person
 
 		B, C, H, W = x1.shape 
 		
@@ -866,11 +866,85 @@ class CustomCombinedExtractorCrossAttention(BaseFeaturesExtractor):
              #   print(f"Other extractor shape: {extractor(observations[key]).shape}")
         # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
         return torch.cat(encoded_tensor_list, dim=1)
+	
+class SharedCNNNature(nn.Module):
+	"""Adapted from Nature CNN: https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/torch_layers.py
+	"""
+	def __init__(self, obs_shape):
+		super().__init__()
+		n_input_channels = obs_shape[0]
+		self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+			nn.ReLU(),
+			nn.Flatten(),
+			nn.Linear(19456,256),
+			nn.ReLU()
+		)
 
+	def forward(self, x):
+		x = self.cnn(x)
+		return x
 
+class MultiViewCrossAttentionEncoderNature(nn.Module):
+	"""
+	Input is the dual environment obs (active and static images already concatenated in core.py). Applies cross attention.
+	"""
+	def __init__(self, shared_cnn):
+		super().__init__()
+		self.shared_cnn = shared_cnn
 
+	def forward(self, x):
 
+		x = self.shared_cnn(x) # 1st and 3rd Person Image concat together
 
+		return x
+
+class CustomCombinedExtractorNature(BaseFeaturesExtractor):
+    """
+    Custom feature extractor for handling multiple inputs (image + goal info). 
+    Observation["observation"] is image data,
+    and observation["achieved_goal"] and ["desired_goal"] are joint info.
+    """
+
+    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 500):
+        super(CustomCombinedExtractorNature, self).__init__(observation_space, features_dim = 1)
+
+        extractors = {}
+        total_concat_size = 0
+        self.output = None
+		
+        for key, subspace in observation_space.spaces.items():
+            if key == "observation": 
+				
+                shared_cnn= SharedCNNNature(obs_shape=(3,180,160))
+
+                self.output = MultiViewCrossAttentionEncoderNature(
+                    shared_cnn = shared_cnn
+                )
+
+                extractors[key] = self.output
+                total_concat_size += features_dim
+            else:
+                extractors[key] = nn.Flatten() # flatten the achieved goal and desired goal
+                total_concat_size += 7
+        
+        self.extractors = nn.ModuleDict(extractors)
+	
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        # self.extractors contain nn.Modules that do all the processing.
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        # Return a (B, self._features_dim) PyTorch tensor, where B is batch dimension.
+        return torch.cat(encoded_tensor_list, dim=1)
 
 
 
