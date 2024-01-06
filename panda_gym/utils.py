@@ -51,11 +51,16 @@ class MobileViT(BaseFeaturesExtractor):
 
         self.preprocess = transforms.Compose([
             transforms.ToPILImage(), 
-            transforms.Resize((224, 224)),
+            transforms.Resize((112, 112)),
             transforms.ToTensor(),
             transforms.Normalize(0.5, 0.5),])
         
-        self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU())
+        self.linear = nn.Sequential(
+            nn.Linear(1000, 500),
+            nn.ReLU(), 
+            nn.Linear(500, features_dim),
+            nn.ReLU()
+            )
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         # print("observations:", observations.shape, observations.type())
