@@ -404,16 +404,17 @@ class RobotCamTaskEnv(gym.Env):
         self.robot = robot
         self.task = task
         observation, _ = self.reset()  # required for init; seed can be changed later
-        observation_shape = observation["observation"].shape
-        achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
-        desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
-        self.observation_space = spaces.Dict(
-            dict(
-                observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
-                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-            )
-        )
+        observation_shape = observation.shape
+        # achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
+        # desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
+        # self.observation_space = spaces.Dict(
+        #     dict(
+        #         observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8)
+        #         #achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
+        #         #desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
+        #     )
+        # )
+        self.observation_space = spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8)
         self.action_space = self.robot.action_space
         self.compute_reward = self.task.compute_reward
         self._saved_goal = dict()  # For state saving and restoring
@@ -438,7 +439,7 @@ class RobotCamTaskEnv(gym.Env):
     def _get_obs(
             self, 
             object_in_cam: bool = True
-            ) -> Dict[str, np.ndarray]:
+            ) -> np.ndarray:
         robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
         task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
         # observation = robot_obs
@@ -456,13 +457,15 @@ class RobotCamTaskEnv(gym.Env):
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
         )[:7].astype(np.float32) # remove fingers angles
 
-        return {
-            "observation": observation,
-            # "observation_rob": robot_obs,
-            # "observation_task": task_obs,
-            "achieved_goal": current_joint_angles,
-            "desired_goal": desired_joint_angles
-        }
+        # return {
+        #     "observation": observation
+        #     # "observation_rob": robot_obs,
+        #     # "observation_task": task_obs,
+        #     #"achieved_goal": current_joint_angles,
+        #     #"desired_goal": desired_joint_angles
+        # }
+        return observation
+        
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
         super().reset(seed=seed, options=options)
