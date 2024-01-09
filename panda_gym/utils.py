@@ -15,7 +15,7 @@ from gymnasium import spaces
 from timm import create_model
 
 
-class MobileViT(BaseFeaturesExtractor):
+class CustomViT(BaseFeaturesExtractor):
     """
     :param observation_space: (gym.Space)
     :param features_dim: (int) Number of features extracted.
@@ -31,7 +31,7 @@ class MobileViT(BaseFeaturesExtractor):
     ) -> None:
         super().__init__(observation_space, features_dim = features_dim)
         assert is_image_space(observation_space, check_channels=False, normalized_image=normalized_image), (
-            "You should use MobileViT "
+            "You should use CustomViT "
             f"only with images not with {observation_space}\n"
             "(you are probably using `CnnPolicy` instead of `MlpPolicy` or `MultiInputPolicy`)\n"
             "If you are using a custom environment,\n"
@@ -42,7 +42,8 @@ class MobileViT(BaseFeaturesExtractor):
             "https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html"
         )
         self.device = torch.device("cuda:" + str(device_id))
-        self.model_name = "mobilevitv2_150.cvnets_in1k"
+        # self.model_name = "mobilevitv2_150.cvnets_in1k"
+        self.model_name = "tiny_vit_5m_224.dist_in22k_ft_in1k"
         self.model = create_model(self.model_name, pretrained=True)
         self.model = self.model.to(self.device)
         self.model.eval()
@@ -102,7 +103,7 @@ class CombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if is_image_space(subspace, normalized_image=normalized_image):
-                extractors[key] = MobileViT(subspace, features_dim=vit_output_dim, normalized_image=normalized_image, device_id=device_id)
+                extractors[key] = CustomViT(subspace, features_dim=vit_output_dim, normalized_image=normalized_image, device_id=device_id)
                 total_concat_size += vit_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
