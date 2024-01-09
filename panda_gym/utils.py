@@ -56,9 +56,7 @@ class MobileViT(BaseFeaturesExtractor):
             transforms.Normalize(0.5, 0.5),])
         
         self.linear = nn.Sequential(
-            nn.Linear(1000, 500),
-            nn.ReLU(), 
-            nn.Linear(500, features_dim),
+            nn.Linear(1000, features_dim),
             nn.ReLU()
             )
 
