@@ -9,6 +9,7 @@ from panda_gym.envs.core import Task
 from panda_gym.pybullet import PyBullet
 from panda_gym.utils import distance
 from panda_gym.utils import generate_object_range
+from panda_gym.utils import generate_semicircle_object_range
 
 
 class PickAndPlaceCam(Task):
@@ -55,7 +56,7 @@ class PickAndPlaceCam(Task):
         )
         self.sim.create_box(
             body_name="white_table",
-            half_extents=np.array([0.4, 0.4, 0.398/2]),
+            half_extents=np.array([0.4, 0.64, 0.398/2]), 
             mass=0.0,
             position=np.array([0.04, 0, -0.398/2]),
             rgba_color=np.array([1, 1, 1, 1]),
@@ -65,21 +66,21 @@ class PickAndPlaceCam(Task):
             half_extents=np.ones(3) * self.object_size / 2,
             mass=1.0,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.1, 0.9, 0.1, 1]),
-        )
-        self.sim.loadURDF( 
-            body_name="stationary_camera",
-            fileName="URDF_files/L515_cam_with_stand.urdf",
-            basePosition=[0.75, 0, 0.5-0.4],
-            useFixedBase=True,
+            rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
         )
         self.sim.create_box(
             body_name="target",
             half_extents=np.ones(3) * self.object_size / 2,
             mass=0.0,
             ghost=True,
-            position=np.array([0.0, 0.0, 0.05]),
-            rgba_color=np.array([0.1, 0.9, 0.1, 0.1]),
+            position=np.array([0.0, 0.0, self.object_size / 2]),
+            rgba_color=np.array([0, 78/255, 1.0, 1.0]),
+        )
+        self.sim.loadURDF( 
+            body_name="stationary_camera",
+            fileName="URDF_files/L515_cam_with_stand.urdf",
+            basePosition=[0.65, 0, 0.5-0.3],
+            useFixedBase=True,
         )
 
     def get_obs(self) -> np.ndarray:
@@ -108,7 +109,7 @@ class PickAndPlaceCam(Task):
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
-        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
+        rgb_img = np.array(rgb_img).reshape(cam_height, cam_width, 4)[:, :, :3]
         return rgb_img
 
     def get_achieved_goal(self) -> np.ndarray:
@@ -124,8 +125,8 @@ class PickAndPlaceCam(Task):
         return np.concatenate([object_position, object_rotation, object_velocity, object_angular_velocity])
 
     def reset(self) -> None:
-        self.obj_range_low, self.obj_range_high = generate_object_range()
-        self.goal_range_low, self.goal_range_high = generate_object_range() # both object and goal must be within reach of Panda arm
+        self.obj_range_low, self.obj_range_high = generate_semicircle_object_range()
+        self.goal_range_low, self.goal_range_high = generate_semicircle_object_range() # both object and goal must be within reach of Panda arm
         self.goal = self._sample_goal()
         object_position = self._sample_object()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
@@ -133,17 +134,15 @@ class PickAndPlaceCam(Task):
 
     def _sample_goal(self) -> np.ndarray:
         """Sample a goal."""
-        goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the cube center
-        noise = self.np_random.uniform(self.goal_range_low, self.goal_range_high)
-        if self.np_random.random() < 0.3:
-            noise[2] = 0.0
+        goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
+        noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
         goal += noise
         return goal
 
     def _sample_object(self) -> np.ndarray:
         """Randomize start position of object."""
-        object_position = np.array([0.0, 0.0, self.object_size / 2])
-        noise = self.np_random.uniform(self.obj_range_low, self.obj_range_high)
+        object_position = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
+        noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
         object_position += noise
         return object_position
 
@@ -153,8 +152,9 @@ class PickAndPlaceCam(Task):
 
     def is_terminated(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
-        height = self.sim.get_base_position("object")[2]
-        return np.array(d < self.distance_threshold or d > self.far_distance_threshold or height < self.object_size/2, dtype=bool)
+      #  height = self.sim.get_base_position("object")[2]
+       # return np.array(d < self.distance_threshold or d > self.far_distance_threshold or height < self.object_size/2, dtype=bool)
+        return np.array(d < self.distance_threshold or d > self.far_distance_threshold, dtype=bool)
 
     def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
