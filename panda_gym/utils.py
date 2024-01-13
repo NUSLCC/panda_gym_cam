@@ -43,7 +43,8 @@ class CustomViT(BaseFeaturesExtractor):
         )
         self.device = torch.device("cuda:" + str(device_id))
         # self.model_name = "mobilevitv2_150.cvnets_in1k"
-        self.model_name = "tiny_vit_5m_224.dist_in22k_ft_in1k"
+        # self.model_name = "tiny_vit_5m_224.dist_in22k_ft_in1k"
+        self.model_name = "convnext_small.fb_in22k_ft_in1k"
         self.model = create_model(self.model_name, pretrained=True)
         self.model = self.model.to(self.device)
         self.model.eval()
