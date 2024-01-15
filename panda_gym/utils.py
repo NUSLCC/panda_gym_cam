@@ -56,11 +56,12 @@ class CustomViT(BaseFeaturesExtractor):
             transforms.ToTensor(),
             transforms.Normalize(0.5, 0.5),])
         
-        self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU())
+        self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU()).to(self.device)
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         print("observations in CustomViT:", observations.shape, observations.type())
-        output = torch.stack([self.linear(self.model(self.preprocess(img))) for img in observations]).to(self.device)
+        observations.to(self.device)
+        output = torch.stack([self.linear(self.model(self.preprocess(img).to(self.device))) for img in observations]).to(self.device)
 
         # input_images_preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
         # print("preprocessed:", input_images_preprocessed.shape, input_images_preprocessed.type())
@@ -116,7 +117,7 @@ class CombinedExtractor(BaseFeaturesExtractor):
         self._features_dim = total_concat_size
 
     def forward(self, observations: TensorDict) -> torch.Tensor:
-        print("observations in CombinedExtractor:", observations.shape, observations.type())
+        # print("observations in CombinedExtractor:", observations.shape, observations.type())
         encoded_tensor_list = []
 
         for key, extractor in self.extractors.items():

@@ -28,7 +28,7 @@ if __name__=="__main__":
 
     # print(model.policy)
     
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_philip4_ConvNext_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('test_sac_dual_philip4_ConvNext_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
