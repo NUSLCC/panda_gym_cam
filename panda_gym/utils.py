@@ -44,7 +44,8 @@ class CustomViT(BaseFeaturesExtractor):
         self.device = torch.device("cuda:" + str(device_id))
         # self.model_name = "mobilevitv2_150.cvnets_in1k"
         # self.model_name = "tiny_vit_5m_224.dist_in22k_ft_in1k"
-        self.model_name = "convnext_small.fb_in22k_ft_in1k"
+        # self.model_name = "convnext_small.fb_in22k_ft_in1k"
+        self.model_name = "lcnet_050.ra2_in1k"
         self.model = create_model(self.model_name, pretrained=True)
         self.model = self.model.to(self.device)
         for param in self.model.parameters():
@@ -59,18 +60,14 @@ class CustomViT(BaseFeaturesExtractor):
         self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU()).to(self.device)
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        print("observations in CustomViT:", observations.shape, observations.type())
-        observations.to(self.device)
-        output = torch.stack([self.linear(self.model(self.preprocess(img).to(self.device))) for img in observations]).to(self.device)
-
-        # input_images_preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
-        # print("preprocessed:", input_images_preprocessed.shape, input_images_preprocessed.type())
-        # output = self.model(input_images_preprocessed.to(self.device))
-        # print("output:", output.shape, output.type())
-        # output = self.linear(output)
-        print("output:", output.shape, output.type())
-        return output
-        # return self.linear(output)
+        # print("observations in CustomViT:", observations.shape, observations.type())
+        preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
+        # print("preprocessed:", preprocessed.shape, preprocessed.type())
+        model = self.model(preprocessed)
+        # print("model:", model.shape, model.type())
+        linear = self.linear(model)
+        # print("linear:", linear.shape, linear.type())
+        return linear
 
 
 class CombinedExtractor(BaseFeaturesExtractor):
@@ -117,12 +114,11 @@ class CombinedExtractor(BaseFeaturesExtractor):
         self._features_dim = total_concat_size
 
     def forward(self, observations: TensorDict) -> torch.Tensor:
-        # print("observations in CombinedExtractor:", observations.shape, observations.type())
         encoded_tensor_list = []
 
         for key, extractor in self.extractors.items():
             encoded_tensor_list.append(extractor(observations[key]))
-        print("encoded_tensor_list length:", len(encoded_tensor_list))
+
         return torch.cat(encoded_tensor_list, dim=1)
 
 
