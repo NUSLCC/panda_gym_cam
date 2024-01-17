@@ -115,7 +115,6 @@ class ReachCam(Task):
         # )
 
     def get_obs(self) -> np.ndarray:
-        rgb_img = self.render_from_stationary_cam() 
         # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
@@ -124,7 +123,7 @@ class ReachCam(Task):
         # self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         # target_velocity = self.object_initial_velocity
         # self.sim.set_base_velocity("target", target_velocity)
-        return rgb_img
+        return self.render_from_stationary_cam()
 
     def render_from_stationary_cam(
         self,
@@ -152,7 +151,12 @@ class ReachCam(Task):
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
         rgb_img = np.array(rgb_img).reshape(cam_height, cam_width, 4)[:, :, :3]
-        return rgb_img
+
+        depth = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        depth = np.array(depth).reshape(cam_height, cam_width)
+        depth = farVal * nearVal / (farVal - (farVal - nearVal) * depth)
+
+        return (rgb_img, depth)
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

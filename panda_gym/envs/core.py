@@ -406,13 +406,15 @@ class RobotCamTaskEnv(gym.Env):
         self.robot = robot
         self.task = task
         observation, _ = self.reset()  # required for init; seed can be changed later
-        observation_shape = observation["observation"].shape
+        img_observation_shape = observation["img_observation"].shape
+        depth_observation_shape = observation["depth_observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
      #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
-                observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
+                img_observation=spaces.Box(0, 255, shape=img_observation_shape, dtype=np.uint8),
+                depth_observation=spaces.Box(0.0, 1.0, shape=depth_observation_shape, dtype=np.float32),
                 achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
                 desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
            #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
@@ -443,14 +445,19 @@ class RobotCamTaskEnv(gym.Env):
             self, 
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
-        task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
+        robot_img_obs = self.robot.get_obs()[0].astype(np.uint8)  
+        task_img_obs = self.task.get_obs()[0].astype(np.uint8)
+        robot_depth_obs = self.robot.get_obs()[1].astype(np.float32)  
+        task_depth_obs = self.task.get_obs()[1].astype(np.float32)
+
+        depth_observation = np.concatenate([robot_depth_obs, task_depth_obs])
+
         # observation = robot_obs
         if object_in_cam: # pass in both active and static camera img
-            observation = np.concatenate([robot_obs, task_obs])
+            img_observation = np.concatenate([robot_img_obs, task_img_obs])
         else: # only pass in static cam
-            robot_obs = np.zeros_like(task_obs).astype(np.uint8)
-            observation = np.concatenate([robot_obs, task_obs])
+            robot_img_obs = np.zeros_like(task_img_obs).astype(np.uint8)
+            img_observation = np.concatenate([robot_img_obs, task_img_obs])
 
         # print(observation.shape)
         # fig, ax = plt.subplots(1,3)
@@ -479,7 +486,8 @@ class RobotCamTaskEnv(gym.Env):
         # )
 
         return {
-            "observation": observation,
+            "img_observation": img_observation,
+            "depth_observation": depth_observation,
             "achieved_goal": current_joint_angles,
             "desired_goal": joint_angles_required
        #     "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
