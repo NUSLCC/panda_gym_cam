@@ -155,8 +155,10 @@ class ReachCam(Task):
         depth = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
         depth = np.array(depth).reshape(cam_height, cam_width)
         depth = farVal * nearVal / (farVal - (farVal - nearVal) * depth)
+        depth = depth[..., np.newaxis]
+        obs = np.concatenate((rgb_img, depth), axis=-1)
 
-        return (rgb_img, depth)
+        return obs
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

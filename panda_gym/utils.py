@@ -15,6 +15,71 @@ from gymnasium import spaces
 from timm import create_model
 
 
+class CustomCombinedExtractor(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.spaces.Dict,
+        features_dim: int = 512
+    ) -> None:
+        super(CustomCombinedExtractor, self).__init__(observation_space, features_dim=512)
+
+        extractors: Dict[str, nn.Module] = {}
+
+        total_concat_size = 0
+        for key, subspace in observation_space.spaces.items():
+            # If the subspace is image space like gym.spaces.Box
+            if key == "observation":
+                extractors[key] = NatureCNN(subspace, features_dim=features_dim)
+                total_concat_size += features_dim
+            else:
+                # The observation key is a vector, flatten it if needed
+                extractors[key] = nn.Flatten()
+                total_concat_size += get_flattened_obs_dim(subspace)
+
+        self.extractors = nn.ModuleDict(extractors)
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key]))
+        return torch.cat(encoded_tensor_list, dim=1)
+    
+
+class NatureCNN(nn.Module):
+	"""Adapted from Nature CNN: https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/torch_layers.py
+	"""
+	def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512
+    ) -> None:
+		super().__init__()
+		print(f'obs shape: {observation_space.shape}')
+		n_input_channels = observation_space.shape[0] 
+		self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten()
+        )
+
+        # Compute shape by doing one forward pass
+		with torch.no_grad():
+			n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
+
+		self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+		
+	def forward(self, observations: torch.Tensor) -> torch.Tensor:
+		return self.linear(self.cnn(observations))
+    
+
 class MobileViT(BaseFeaturesExtractor):
     """
     :param observation_space: (gym.Space)
