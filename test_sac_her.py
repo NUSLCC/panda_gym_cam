@@ -9,7 +9,7 @@ from stable_baselines3.common.torch_layers import CombinedExtractor
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
-    env_id = "PandaReachCamJoints-v3"
+    env_id = "PandaPickandPlaceCamJoints-v3"
     num_cpu = 16
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
 
@@ -34,4 +34,4 @@ if __name__=="__main__":
     model.set_logger(new_logger)
 
     model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_her_panda_cnn")
+    model.save("sac_her_philip4_pickandplace")
