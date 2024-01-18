@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import sys
 sys.path.append("/home/lcc/GitRepo/panda-gym")
+sys.path.append("/Users/chenchen/GitRepo/panda_gym_cam")
 from panda_gym.envs import PandaReachCamEnv
 
 env = PandaReachCamEnv(render_mode="human") # rgb_array

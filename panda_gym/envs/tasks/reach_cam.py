@@ -81,7 +81,7 @@ class ReachCam(Task):
     def render_from_stationary_cam(
         self,
         cam_width: int = 160,
-        cam_height: int = 180,
+        cam_height: int = 160,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
@@ -111,7 +111,7 @@ class ReachCam(Task):
 
         global_cam = np.concatenate((rgb_img, depth_img), axis=-1)
 
-        return global_cam
+        return rgb_img
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

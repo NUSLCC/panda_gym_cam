@@ -38,7 +38,7 @@ class ReachCamObstacle(Task):
         self.goal_range_low = None
         self.goal_range_high = None
         self.cam_width: int = 160
-        self.cam_height: int = 90
+        self.cam_height: int = 160
         self.cam_link = 13
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
@@ -148,9 +148,9 @@ class ReachCamObstacle(Task):
     def render_from_stationary_cam(
         self,
         # cam_width: int = 400,
-        # cam_height: int = 90,
+        # cam_height: int = 160,
         cam_width: int = 160,
-        cam_height: int = 90,
+        cam_height: int = 160,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm

@@ -116,7 +116,7 @@ class PandaCam(PyBulletRobot):
     def render_from_robot_cam(
         self,
         cam_width: int = 160,
-        cam_height: int = 180,
+        cam_height: int = 160,
     ) -> Optional[np.ndarray]:
         """
         Camera fixed to the panda robot arm
@@ -144,7 +144,7 @@ class PandaCam(PyBulletRobot):
 
         rob_cam = np.concatenate((rgb_img, depth_img), axis=-1)
 
-        return rob_cam
+        return rgb_img
     
 
     def reset(self) -> None:
