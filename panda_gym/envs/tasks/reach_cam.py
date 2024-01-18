@@ -80,7 +80,7 @@ class ReachCam(Task):
 
     def render_from_stationary_cam(
         self,
-        cam_width: int = 320,
+        cam_width: int = 160,
         cam_height: int = 180,
     ) -> Optional[np.ndarray]:
         """
@@ -100,9 +100,18 @@ class ReachCam(Task):
         nearVal = 0.01
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+        
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
-        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
-        return rgb_img
+        rgb_img = np.array(rgb_img).reshape((cam_height, cam_width, 4))[:, :, :3]
+
+        depth_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        depth_img = np.array(depth_img).reshape((cam_height, cam_width))
+        depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
+        depth_img = depth_img[..., np.newaxis]
+
+        global_cam = np.concatenate((rgb_img, depth_img), axis=-1)
+
+        return global_cam
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

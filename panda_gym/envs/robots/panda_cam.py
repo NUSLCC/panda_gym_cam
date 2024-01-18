@@ -115,7 +115,7 @@ class PandaCam(PyBulletRobot):
 
     def render_from_robot_cam(
         self,
-        cam_width: int = 320,
+        cam_width: int = 160,
         cam_height: int = 180,
     ) -> Optional[np.ndarray]:
         """
@@ -123,7 +123,6 @@ class PandaCam(PyBulletRobot):
         """
         cam_pos = self.sim.get_link_position("panda_camera", self.cam_link)
         cam_orn = self.sim.get_link_orientation("panda_camera", self.cam_link)
-        
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))
@@ -134,9 +133,19 @@ class PandaCam(PyBulletRobot):
         nearVal = 0.01
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+        
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
-        rgb_img = np.array(rgb_img).reshape(cam_width, cam_height, 4)[:, :, :3]
-        return rgb_img
+        rgb_img = np.array(rgb_img).reshape((cam_height, cam_width, 4))[:, :, :3]
+
+        depth_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        depth_img = np.array(depth_img).reshape((cam_height, cam_width))
+        depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
+        depth_img = depth_img[..., np.newaxis]
+
+        rob_cam = np.concatenate((rgb_img, depth_img), axis=-1)
+
+        return rob_cam
+    
 
     def reset(self) -> None:
         self.set_joint_neutral()
