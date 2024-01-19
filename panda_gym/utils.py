@@ -72,15 +72,20 @@ class NatureCNN(BaseFeaturesExtractor):
         # Compute flatten shape by doing one forward pass
         with torch.no_grad():
             n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).permute(0,3,1,2).float()).shape[1]
+        
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         observations = observations.permute(0, 3, 1, 2) # [batch, H, W, C] -> [batch, C, H, W]
         if observations.shape[1] == 6:
-            observations/=255.0
+            observations = observations.clone() / 255.0
         elif observations.shape[1] == 8:
-            observations[:,0:3, :, :]/=255.0 # [batch, C, H, W]
-            observations[:,4:7, :, :]/=255.0 # [batch, C, H, W]
+            normalization_mat = torch.ones_like(observations).float()
+            normalization_mat[:, 0:3 ,: , :] = 1/255.0
+            normalization_mat[:, 4:7 ,: , :] = 1/255.0
+            observations = observations * normalization_mat
+            # observations[:, 0:3, :, :] = observations[:, 0:3, :, :].clone() / 255.0 # [batch, C, H, W]
+            # observations[:, 4:7, :, :] = observations[:, 4:7, :, :].clone() / 255.0 # [batch, C, H, W]
         else:
             raise Exception("Observation Input Shape Error")
         return self.linear(self.cnn(observations))

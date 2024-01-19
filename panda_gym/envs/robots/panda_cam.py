@@ -33,7 +33,7 @@ class PandaCam(PyBulletRobot):
         self.control_type = control_type
         n_action = 3 if self.control_type == "ee" else 7  # control (x, y z) if "ee", else, control the 7 joints
         n_action += 0 if self.block_gripper else 1
-        action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float32)
+        action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float16)
         super().__init__(
             sim,
             body_name="panda_camera",

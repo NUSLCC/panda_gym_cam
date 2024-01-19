@@ -257,9 +257,9 @@ class RobotTaskEnv(gym.Env):
         desired_goal_shape = observation["desired_goal"].shape
         self.observation_space = spaces.Dict(
             dict(
-                observation=spaces.Box(-10.0, 10.0, shape=observation_shape, dtype=np.float32),
-                desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float32),
-                achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float32),
+                observation=spaces.Box(-10.0, 10.0, shape=observation_shape, dtype=np.float16),
+                desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float16),
+                achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float16),
             )
         )
         self.action_space = self.robot.action_space
@@ -284,14 +284,14 @@ class RobotTaskEnv(gym.Env):
             )
 
     def _get_obs(self) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.float32)  # robot state
-        task_obs = self.task.get_obs().astype(np.float32)  # object position, velococity, etc...
+        robot_obs = self.robot.get_obs().astype(np.float16)  # robot state
+        task_obs = self.task.get_obs().astype(np.float16)  # object position, velococity, etc...
         observation = np.concatenate([robot_obs, task_obs])
-        achieved_goal = self.task.get_achieved_goal().astype(np.float32)
+        achieved_goal = self.task.get_achieved_goal().astype(np.float16)
         return {
             "observation": observation,
             "achieved_goal": achieved_goal,
-            "desired_goal": self.task.get_goal().astype(np.float32),
+            "desired_goal": self.task.get_goal().astype(np.float16),
         }
 
     def reset(
@@ -409,9 +409,9 @@ class RobotCamTaskEnv(gym.Env):
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
         self.observation_space = spaces.Dict(
             dict(
-                observation=spaces.Box(0.0, 255.0, shape=observation_shape, dtype=np.float32),
-                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
+                observation=spaces.Box(0.0, 255.0, shape=observation_shape, dtype=np.float16),
+                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float16), 
+                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float16) 
             )
         )
         self.action_space = self.robot.action_space
@@ -439,21 +439,21 @@ class RobotCamTaskEnv(gym.Env):
             self, 
             object_in_cam: bool = True
             ) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.float32)
-        task_obs = self.task.get_obs().astype(np.float32)
+        robot_obs = self.robot.get_obs().astype(np.float16)
+        task_obs = self.task.get_obs().astype(np.float16)
 
         observation = np.concatenate((robot_obs, task_obs), axis=2) # R1,G1,B1,D1,R2,G2,B2,D2
 
         # if object_in_cam: # pass in both active and static camera img
         #     observation = np.concatenate([robot_obs, task_obs])
         # else: # only pass in static cam
-        #     robot_obs = np.zeros_like(task_obs).astype(np.float32)
+        #     robot_obs = np.zeros_like(task_obs).astype(np.float16)
         #     observation = np.concatenate([robot_obs, task_obs])
 
-        current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
-        desired_goal_coords = self.task.get_goal().astype(np.float32)
+        current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float16)
+        desired_goal_coords = self.task.get_goal().astype(np.float16)
         desired_joint_angles = self.robot.inverse_kinematics(
-            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(np.float32) # remove fingers angles
+            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(np.float16) # remove fingers angles
 
         return {
             "observation": observation,
@@ -469,9 +469,9 @@ class RobotCamTaskEnv(gym.Env):
             self.task.reset()
         observation = self._get_obs()
 
-        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
-                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal())}
+        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()),
+                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()),
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal())}
         return observation, info
 
     def save_state(self) -> int:
@@ -510,12 +510,12 @@ class RobotCamTaskEnv(gym.Env):
         observation = self._get_obs(object_in_active_cam)
 
         # An episode is terminated if the agent has reached the target
-        terminated  = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
-        success     = bool(self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
-        failure     = bool(self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
+        terminated  = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()))
+        success     = bool(self.task.is_success(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()))
+        failure     = bool(self.task.is_failure(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()))
         truncated = False
         info = {"is_terminated": terminated, "is_success": success, "is_failure": failure}
-        reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal(), info))
+        reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal(), info))
         return observation, reward, terminated, truncated, info
 
     def close(self) -> None:
