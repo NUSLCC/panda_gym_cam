@@ -109,9 +109,9 @@ class ReachCam(Task):
         depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
         depth_img = depth_img[..., np.newaxis]
 
-        global_cam = np.concatenate((rgb_img, depth_img), axis=-1)
+        # global_cam = np.concatenate((rgb_img, depth_img), axis=-1)
 
-        return global_cam
+        return rgb_img, depth_img
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

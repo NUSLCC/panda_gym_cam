@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
+from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space, is_image_space_channels_first
 from stable_baselines3.common.type_aliases import TensorDict
 from typing import Dict
 from gymnasium import spaces
@@ -46,19 +46,7 @@ class NatureCNN(BaseFeaturesExtractor):
         )
         super().__init__(observation_space, features_dim)
         # We assume CxHxW images (channels first)
-        # Re-ordering will be done by pre-preprocessing or wrapper
-        assert is_image_space(observation_space, check_channels=False, normalized_image=normalized_image), (
-            "You should use NatureCNN "
-            f"only with images not with {observation_space}\n"
-            "(you are probably using `CnnPolicy` instead of `MlpPolicy` or `MultiInputPolicy`)\n"
-            "If you are using a custom environment,\n"
-            "please check it using our env checker:\n"
-            "https://stable-baselines3.readthedocs.io/en/master/common/env_checker.html.\n"
-            "If you are using `VecNormalize` or already normalized channel-first images "
-            "you should pass `normalize_images=False`: \n"
-            "https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html"
-        )
-        n_input_channels = observation_space.shape[-1] # last channel is feature channel from raw data [batch, H, W, C]
+        n_input_channels = observation_space.shape[0] # last channel is feature channel from raw data [B, C H, W]
         self.cnn = nn.Sequential(
             nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
             nn.ReLU(),
@@ -71,23 +59,11 @@ class NatureCNN(BaseFeaturesExtractor):
 
         # Compute flatten shape by doing one forward pass
         with torch.no_grad():
-            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).permute(0,3,1,2).float()).shape[1]
+            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
         
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        observations = observations.permute(0, 3, 1, 2) # [batch, H, W, C] -> [batch, C, H, W]
-        if observations.shape[1] == 6:
-            observations = observations.clone() / 255.0
-        elif observations.shape[1] == 8:
-            normalization_mat = torch.ones_like(observations).float()
-            normalization_mat[:, 0:3 ,: , :] = 1/255.0
-            normalization_mat[:, 4:7 ,: , :] = 1/255.0
-            observations = observations * normalization_mat
-            # observations[:, 0:3, :, :] = observations[:, 0:3, :, :].clone() / 255.0 # [batch, C, H, W]
-            # observations[:, 4:7, :, :] = observations[:, 4:7, :, :].clone() / 255.0 # [batch, C, H, W]
-        else:
-            raise Exception("Observation Input Shape Error")
         return self.linear(self.cnn(observations))
 
 
@@ -120,12 +96,8 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
 
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
-            # If the subspace is image space like gym.spaces.Box
-            if is_image_space(subspace, normalized_image=normalized_image):
-                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim)
-                total_concat_size += cnn_output_dim
-            elif key == 'observation':
-                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=True)
+            if key == "observation":
+                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
@@ -143,6 +115,21 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         for key, extractor in self.extractors.items():
             encoded_tensor_list.append(extractor(observations[key]))
         return torch.cat(encoded_tensor_list, dim=1)
+    
+    # def preprocessing(self, raw_observation: torch.Tensor) -> torch.Tensor:
+    #     observations = raw_observation.permute(0, 3, 1, 2) # [batch, H, W, C] -> [batch, C, H, W]
+    #     # RGB mode, normalize all channels
+    #     if observations.shape[1] == 6:
+    #         observations = observations / 255.0
+    #     # RGBD mode, only normalize rgb channels
+    #     elif observations.shape[1] == 8:
+    #         normalization_mat = torch.ones_like(observations).float()
+    #         normalization_mat[:, 0:3 ,: , :] = 1/255.0
+    #         normalization_mat[:, 4:7 ,: , :] = 1/255.0
+    #         observations = observations * normalization_mat
+    #     else:
+    #         raise Exception("Observation Input Shape Error")
+    #     return observations
 
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:

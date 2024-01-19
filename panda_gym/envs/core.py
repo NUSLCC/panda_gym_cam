@@ -405,13 +405,16 @@ class RobotCamTaskEnv(gym.Env):
         self.task = task
         observation, _ = self.reset()  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
+        observation_dtype = observation["observation"].dtype
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
+        achieved_goal_dtype = observation["achieved_goal"].dtype
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
+        desired_goal_dtype = observation["desired_goal"].dtype
         self.observation_space = spaces.Dict(
             dict(
-                observation=spaces.Box(0.0, 255.0, shape=observation_shape, dtype=np.float16),
-                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float16), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float16) 
+                observation=spaces.Box(0.0, 255.0, shape=observation_shape, dtype=observation_dtype),
+                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=achieved_goal_dtype), 
+                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=desired_goal_dtype) 
             )
         )
         self.action_space = self.robot.action_space
@@ -437,12 +440,29 @@ class RobotCamTaskEnv(gym.Env):
 
     def _get_obs(
             self, 
-            object_in_cam: bool = True
+            object_in_cam: bool = True,
+            normalize_image: bool = False,
+            with_depth: bool = False,
             ) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.float16)
-        task_obs = self.task.get_obs().astype(np.float16)
+        robot_rgb, robot_dep = self.robot.get_obs()
+        task_rgb, task_dep = self.task.get_obs()
 
-        observation = np.concatenate((robot_obs, task_obs), axis=2) # R1,G1,B1,D1,R2,G2,B2,D2
+        if normalize_image:
+            robot_rgb = robot_rgb.astype(np.float16) / 255.0 # [H, W, C]
+            task_rgb = task_rgb.astype(np.float16) / 255.0 # [H, W, C]
+        else:
+            robot_rgb = robot_rgb.astype(np.uint8)
+            task_rgb = task_rgb.astype(np.uint8)
+        
+        if with_depth:
+            robot_obs = np.concatenate((robot_rgb, robot_dep.astype(np.float16)), axis=-1)
+            task_obs = np.concatenate((task_rgb, task_dep.astype(np.float16)), axis=-1)
+        else:
+            robot_obs = robot_rgb
+            task_obs = task_rgb
+
+        observation = np.concatenate((robot_obs, task_obs), axis=-1)
+        observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
 
         # if object_in_cam: # pass in both active and static camera img
         #     observation = np.concatenate([robot_obs, task_obs])

@@ -142,9 +142,9 @@ class PandaCam(PyBulletRobot):
         depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
         depth_img = depth_img[..., np.newaxis]
 
-        rob_cam = np.concatenate((rgb_img, depth_img), axis=-1)
+        # rob_cam = np.concatenate((rgb_img, depth_img), axis=-1)
 
-        return rob_cam
+        return rgb_img, depth_img
     
 
     def reset(self) -> None:
@@ -179,7 +179,7 @@ class PandaCam(PyBulletRobot):
     
     def object_in_cam(self) -> np.ndarray:
         """Returns whether the target object is within the fov of the panda camera. This is true if there is one or more green pixel."""
-        pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam().astype(np.uint8))
+        pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam()[0].astype(np.uint8))
        # print(f'Green pixel count: \n {pixel_count}')
         return np.array(pixel_count > 0, dtype=bool)
 
