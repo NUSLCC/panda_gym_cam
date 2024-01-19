@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space
 from stable_baselines3.common.type_aliases import TensorDict
-from typing import Dict, List, Tuple, Type, Union
+from typing import Dict
 from gymnasium import spaces
 import gymnasium as gym
 from timm import create_model
@@ -58,7 +58,7 @@ class NatureCNN(BaseFeaturesExtractor):
             "you should pass `normalize_images=False`: \n"
             "https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html"
         )
-        n_input_channels = observation_space.shape[0]
+        n_input_channels = observation_space.shape[-1] # last channel is feature channel from raw data [batch, H, W, C]
         self.cnn = nn.Sequential(
             nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
             nn.ReLU(),
@@ -69,13 +69,20 @@ class NatureCNN(BaseFeaturesExtractor):
             nn.Flatten(),
         )
 
-        # Compute shape by doing one forward pass
+        # Compute flatten shape by doing one forward pass
         with torch.no_grad():
-            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
-
+            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).permute(0,3,1,2).float()).shape[1]
         self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        observations = observations.permute(0, 3, 1, 2) # [batch, H, W, C] -> [batch, C, H, W]
+        if observations.shape[1] == 6:
+            observations/=255.0
+        elif observations.shape[1] == 8:
+            observations[:,0:3, :, :]/=255.0 # [batch, C, H, W]
+            observations[:,4:7, :, :]/=255.0 # [batch, C, H, W]
+        else:
+            raise Exception("Observation Input Shape Error")
         return self.linear(self.cnn(observations))
 
 
@@ -111,6 +118,9 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
             # If the subspace is image space like gym.spaces.Box
             if is_image_space(subspace, normalized_image=normalized_image):
                 extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim)
+                total_concat_size += cnn_output_dim
+            elif key == 'observation':
+                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=True)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed

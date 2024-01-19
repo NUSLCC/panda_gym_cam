@@ -14,8 +14,8 @@ if __name__=="__main__":
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
 
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=64, gamma=0.95, learning_rate=1e-4, verbose=1, 
-                train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1000,
-                buffer_size=20000, replay_buffer_class=HerReplayBuffer,
+                train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=100,
+                buffer_size=60000, replay_buffer_class=HerReplayBuffer, device="cuda:1",
                 # Parameters for HER
                 replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for SAC
@@ -27,10 +27,10 @@ if __name__=="__main__":
                 )
 
     # print(model.policy)
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_dep_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_depth_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
     model.learn(total_timesteps=700_000, progress_bar=True)
-    model.save("sac_her_dual_cnn_dep")
+    model.save("sac_her_dual_cnn_depth")

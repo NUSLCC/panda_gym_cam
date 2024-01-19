@@ -111,7 +111,7 @@ class ReachCam(Task):
 
         global_cam = np.concatenate((rgb_img, depth_img), axis=-1)
 
-        return rgb_img
+        return global_cam
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())

@@ -144,7 +144,7 @@ class PandaCam(PyBulletRobot):
 
         rob_cam = np.concatenate((rgb_img, depth_img), axis=-1)
 
-        return rgb_img
+        return rob_cam
     
 
     def reset(self) -> None:
