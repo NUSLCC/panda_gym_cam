@@ -11,7 +11,6 @@ from panda_gym.utils import calculate_object_range
 from panda_gym.utils import generate_object_range
 from panda_gym.utils import sample_object_obstacle_goal
 from panda_gym.utils import colorjitter
-from panda_gym.utils import masked_auto_encoder
 from panda_gym.utils import velocity_calculator
 from panda_gym.utils import sine_velocity
 
@@ -98,44 +97,9 @@ class ReachCamObstacle(Task):
         )
         self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
 
-        # self.sim.create_sphere(
-        #     body_name="outer",
-        #     radius=self.object_size/2,
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([-0.05094756, -0.21310885, self.object_size / 2]),
-        #     rgba_color=np.array([0, 0, 0, 1]),
-        # )
-        # self.sim.create_sphere(
-        #     body_name="outer",
-        #     radius=self.object_size/2,
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([-0.05094756, 0.21278672, self.object_size / 2]),
-        #     rgba_color=np.array([0, 0, 0, 1]),
-        # )
-        # self.sim.create_sphere(
-        #     body_name="outer",
-        #     radius=self.object_size/2,
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([0.1978265, 0.21278672, self.object_size / 2]),
-        #     rgba_color=np.array([0, 0, 0, 1]),
-        # )
-        # self.sim.create_sphere(
-        #     body_name="outer",
-        #     radius=self.object_size/2,
-        #     mass=0.0,
-        #     ghost=True,
-        #     position=np.array([0.1978265, -0.21310885, self.object_size / 2]),
-        #     rgba_color=np.array([0, 0, 0, 1]),
-        # )
-
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam() 
         # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
-        # mae_img = masked_auto_encoder(jittered_img)
-        # return mae_img
 
         # Comment out the velocity part first to make way for obstacle
         # target_position = self.sim.get_base_position("target")
@@ -147,8 +111,6 @@ class ReachCamObstacle(Task):
 
     def render_from_stationary_cam(
         self,
-        # cam_width: int = 400,
-        # cam_height: int = 224,
         cam_width: int = 160,
         cam_height: int = 90,
     ) -> Optional[np.ndarray]:
@@ -186,12 +148,12 @@ class ReachCamObstacle(Task):
 
        # self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
 
-    # def _sample_goal(self) -> np.ndarray:
-    #     """Randomize goal."""
-    #     goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
-    #     noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
-    #     goal += noise
-    #     return goal
+    def _sample_goal(self) -> np.ndarray:
+        """Randomize goal."""
+        goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
+        noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
+        goal += noise
+        return goal
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)

@@ -8,8 +8,6 @@ from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
-from mae import models_mae
-from mae.util import pos_embed
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
@@ -137,10 +135,6 @@ def generate_object_range():
         obj_range_high (np.ndarray): coordinates of the maximum of obj range
     """
 
-    # x_min = -0.25
-    # x_max = 0.25
-    # y_min = -0.35
-    # y_max = 0.35
     x_min = -0.15
     x_max = 0.2
     y_min = -0.3
@@ -220,123 +214,24 @@ def colorjitter(img, brightness, contrast, saturation, hue):
     """
     Applies color jitter to the input image
     Args:
-        RGB image (np.ndarray) of either active-view or passive-view camera. Shape of W, H, C.
+        RGB image (np.ndarray) of either active-view or passive-view camera. Shape of H, W, C.
     Returns:
-        RGB image (np.ndarray) that has brightness, contrast, saturation and hue jittered. Shape of W, H, C.
+        RGB image (np.ndarray) that has brightness, contrast, saturation and hue jittered. Shape of H, W, C.
     """
+
     org_img = np.array(img).astype(np.uint8)
-    img = np.array(img).astype(np.uint8).transpose(1, 0, 2)
+    img = np.array(img).astype(np.uint8)
     pil_img = Image.fromarray(img)
     color_jitter = transforms.ColorJitter(brightness = brightness, contrast=contrast, saturation=saturation, hue=hue)
     pil_img = color_jitter(pil_img)
-    jittered_img = np.asarray(pil_img).astype(np.uint8).transpose(1, 0, 2)
+    jittered_img = np.asarray(pil_img).astype(np.uint8)
     fig, axes = plt.subplots(1, 2)
-    axes[0].imshow(org_img.reshape(224, 400, 3))
+    axes[0].imshow(org_img)
     axes[0].set_title('Original image')
-    axes[1].imshow(jittered_img.reshape(224, 400, 3))
+    axes[1].imshow(jittered_img)
     axes[1].set_title('Jittered image')
     plt.show()
     return jittered_img
-
-def masked_auto_encoder(img):
-    """
-    Applies MAE to the input image
-    Args:
-        RGB image (np.ndarray) of shape of W, H, C.
-    Returns:
-        RGB image (np.ndarray) which includes the reconstruction of decoder of shape of W, H, C.
-    """
-    imagenet_mean = np.array([0.485, 0.456, 0.406])
-    imagenet_std = np.array([0.229, 0.224, 0.225])
-    
-    img = np.array(img).reshape(224,400,3)
-
-    img = Image.fromarray(img).resize((224, 224))
-    img = np.array(img) / 255.
-
-    # normalize by ImageNet mean and std
-    img = img - imagenet_mean
-    img = img / imagenet_std
-
-    plt.rcParams['figure.figsize'] = [5, 5]
-    show_image(torch.tensor(img))
-
-    chkpt_dir = 'mae/mae_visualize_vit_large_ganloss.pth'
-    model_mae_gan = prepare_model(chkpt_dir, 'mae_vit_large_patch16')
-
-    print('MAE with extra GAN loss:')
-    run_one_image(img, model_mae_gan)
-
-
-def show_image(image,title=''):
-    # image is [H, W, 3]
-    imagenet_mean = np.array([0.485, 0.456, 0.406])
-    imagenet_std = np.array([0.229, 0.224, 0.225])
-    assert image.shape[2] == 3
-    x = image * imagenet_std + imagenet_mean
-    plt.imshow(torch.clip(x * 255, 0, 255).int())
-    plt.title(title, fontsize=16)
-    plt.axis('off')
-    return
-
-def prepare_model(chkpt_dir, arch='mae_vit_large_patch16'):
-    # build model
-    model = getattr(models_mae, arch)()
-    # load model
-    checkpoint = torch.load(chkpt_dir, map_location='cpu')
-    msg = model.load_state_dict(checkpoint['model'], strict=False)
-    print(msg)
-    return model
-
-def run_one_image(img, model):
-    imagenet_mean = np.array([0.485, 0.456, 0.406])
-    imagenet_std = np.array([0.229, 0.224, 0.225])
-    x = torch.tensor(img)
-
-    # make it a batch-like
-    x = x.unsqueeze(dim=0)
-    x = torch.einsum('nhwc->nchw', x)
-
-    # run MAE
-    loss, y, mask = model(x.float(), mask_ratio=0.75)
-    y = model.unpatchify(y)
-    y = torch.einsum('nchw->nhwc', y).detach().cpu()
-
-    # visualize the mask
-    mask = mask.detach()
-    mask = mask.unsqueeze(-1).repeat(1, 1, model.patch_embed.patch_size[0]**2 *3)  # (N, H*W, p*p*3)
-    mask = model.unpatchify(mask)  # 1 is removing, 0 is keeping
-    mask = torch.einsum('nchw->nhwc', mask).detach().cpu()
-    
-    x = torch.einsum('nchw->nhwc', x)
-
-    # masked image
-    im_masked = x * (1 - mask)
-
-    # MAE reconstruction pasted with visible patches
-    im_paste = x * (1 - mask) + y * mask
-
-    # Convert tensor to RGB array with reverse normalization
-
-    im_paste_rgb = torch.clip((im_paste * imagenet_std + imagenet_mean) * 255, 0, 255).int().numpy() # return this later
-
-    # make the plt figure larger
-    plt.rcParams['figure.figsize'] = [24, 24]
-
-    plt.subplot(1, 4, 1)
-    show_image(x[0], "original")
-
-    plt.subplot(1, 4, 2)
-    show_image(im_masked[0], "masked")
-
-    plt.subplot(1, 4, 3)
-    show_image(y[0], "reconstruction")
-
-    plt.subplot(1, 4, 4)
-    show_image(im_paste[0], "reconstruction + visible")
-
-    plt.tight_layout()
-    plt.show()
 
 def velocity_calculator(
     target_position: np.ndarray,

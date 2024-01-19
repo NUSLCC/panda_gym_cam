@@ -409,7 +409,6 @@ class RobotCamTaskEnv(gym.Env):
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
-     #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
@@ -445,38 +444,18 @@ class RobotCamTaskEnv(gym.Env):
             ) -> Dict[str, np.ndarray]:
         robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
         task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
-        # observation = robot_obs
+        
         if object_in_cam: # pass in both active and static camera img
             observation = np.concatenate([robot_obs, task_obs])
         else: # only pass in static cam
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
             observation = np.concatenate([robot_obs, task_obs])
 
-        # print(observation.shape)
-        # fig, ax = plt.subplots(1,3)
-        # ax[0].imshow(observation)
-        # ax[0].set_title('Core.py observation (HW instead of WH)')
-        # ax[1].imshow(robot_obs)
-        # ax[1].set_title('Robot obs core.py (HW instead of WH)')
-        # ax[2].imshow(task_obs)
-        # ax[2].set_title('Task obs in core.py (HW instead of WH)')
-    
-        # plt.show()
-
-      #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
         joint_angles_required = self.robot.inverse_kinematics(
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
         )[:7].astype(np.float32) # remove fingers angles
-
-        # self.observation_space = spaces.Dict( # Try this
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation.shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=current_joint_angles.shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=joint_angles_required.shape, dtype=np.float32) 
-        #     )
-        # )
 
         return {
             "observation": observation,
@@ -494,17 +473,6 @@ class RobotCamTaskEnv(gym.Env):
             self.robot.reset()
             self.task.reset()
         observation = self._get_obs()
-
-        # observation_shape = observation["observation"].shape # Try this for dynamic observation space
-        # achieved_goal_shape = observation["achieved_goal"].shape 
-        # desired_goal_shape = observation["desired_goal"].shape 
-        # self.observation_space = spaces.Dict( 
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-        #     )
-        # )
 
         info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
                 "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
@@ -545,17 +513,6 @@ class RobotCamTaskEnv(gym.Env):
      #   contact_points = self.task.is_in_collision()
         object_in_active_cam = bool(self.robot.object_in_cam())
         observation = self._get_obs(object_in_active_cam)
-
-        # observation_shape = observation["observation"].shape # Try this for dynamic observation space
-        # achieved_goal_shape = observation["achieved_goal"].shape 
-        # desired_goal_shape = observation["desired_goal"].shape 
-        # self.observation_space = spaces.Dict( 
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-        #     )
-        # )
 
         # An episode is terminated if the agent has reached the target
         terminated = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))

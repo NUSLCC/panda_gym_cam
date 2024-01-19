@@ -11,9 +11,9 @@ planeId = p.loadURDF('plane.urdf')
 camId = p.loadURDF('URDF_files/L515_cam_with_stand.urdf', [1.5,0,0], p.getQuaternionFromEuler([0,0,0]))
 pandaId = p.loadURDF('URDF_files/panda_modified.urdf',[-0.6,0,0], p.getQuaternionFromEuler([0,0,0]), useFixedBase = True)
 
-# neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
-# for i in range(len(neutral_joint_values)):  
-#     p.resetJointState(pandaId, i, targetValue = neutral_joint_values[i])
+neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
+for i in range(len(neutral_joint_values)):  
+    p.resetJointState(pandaId, i, targetValue = neutral_joint_values[i])
 
 for i in range(10000):
     """
@@ -22,16 +22,13 @@ for i in range(10000):
     only want to see one rendering.
     """
 
-    # ee_state = p.getLinkState(pandaId, 11)
-    # print(ee_state[0])
+
     """
     Robot cam block below
     """
     camera_state = p.getLinkState(pandaId, 13)
-   # print(f"Camera state is {camera_state}")
     camera_pos = np.array(camera_state[0])
     camera_orn = np.array(camera_state[1])
-  #  print(f"Camera orn: {p.getEulerFromQuaternion(camera_orn)}")
     rot_matrix = np.array(p.getMatrixFromQuaternion(camera_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
     forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
     up_vec = rot_matrix.dot(np.array((0, 1, 0)))
@@ -68,15 +65,13 @@ for i in range(10000):
     rgb_img = p.getCameraImage(width, height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2] # COMMENT OUT THIS LINE TO SHOW ROBOT-CAM RENDERING
     rgb_img2 = p.getCameraImage(width, height, view_matrix2, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
     
-    #rgb_img = np.array(self.rgb_img).reshape(self.height, self.width, 4)[:, :, :3]
-    #rgb_img2 = np.array(self.rgb_img).reshape(self.height, self.width, 4)[:, :, :3]
 
     ee_state = p.getLinkState(pandaId, 11)
     print(ee_state[0])
 
-    joint_poses = p.calculateInverseKinematics(pandaId, 11, [0.155, 0.255, 0], p.getQuaternionFromEuler([0,-math.pi, math.pi/2]))
-    for i in range(7):
-        p.setJointMotorControl2(pandaId, i, controlMode=p.POSITION_CONTROL, targetPosition=joint_poses[i])
+    # joint_poses = p.calculateInverseKinematics(pandaId, 11, [0.155, 0.255, 0], p.getQuaternionFromEuler([0,-math.pi, math.pi/2]))
+    # for i in range(7):
+    #     p.setJointMotorControl2(pandaId, i, controlMode=p.POSITION_CONTROL, targetPosition=joint_poses[i])
 
     p.configureDebugVisualizer(p.COV_ENABLE_SINGLE_STEP_RENDERING) 
     p.stepSimulation()
