@@ -451,6 +451,7 @@ class RobotCamTaskEnv(gym.Env):
             robot_rgb = robot_rgb.astype(np.float16) / 255.0 # [H, W, C]
             task_rgb = task_rgb.astype(np.float16) / 255.0 # [H, W, C]
         else:
+            assert with_depth == False, "RGB mode has no depth"
             robot_rgb = robot_rgb.astype(np.uint8)
             task_rgb = task_rgb.astype(np.uint8)
         
