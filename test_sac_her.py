@@ -33,5 +33,5 @@ if __name__=="__main__":
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
-    model.learn(total_timesteps=700_000, progress_bar=True)
+    model.learn(total_timesteps=1_000_000, progress_bar=True)
     model.save("sac_her_philip4_pickandplace")

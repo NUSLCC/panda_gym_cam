@@ -164,6 +164,14 @@ class PyBulletRobot(ABC):
     def get_arm_joint_angles(self) -> np.ndarray:
         """Returns array of current arm joint angles"""
 
+    @abstractmethod
+    def get_ee_position(self) -> np.ndarray:
+        """Returns end effector position (x,y,z)"""
+
+    @abstractmethod
+    def get_fingers_width(self) -> np.ndarray:
+        """Returns finger width between the grippers"""
+
 class Task(ABC):
     """Base class for tasks.
     Args:
@@ -409,12 +417,14 @@ class RobotCamTaskEnv(gym.Env):
         observation_shape = observation["observation"].shape
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
+        state_shape = observation["state"].shape
      #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
                 achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
+                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32),
+                state=spaces.Box(-5.0, 5.0, shape=state_shape, dtype=np.float32) 
            #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
             )
         )
@@ -452,36 +462,23 @@ class RobotCamTaskEnv(gym.Env):
             robot_obs = np.zeros_like(task_obs).astype(np.uint8)
             observation = np.concatenate([robot_obs, task_obs])
 
-        # print(observation.shape)
-        # fig, ax = plt.subplots(1,3)
-        # ax[0].imshow(observation)
-        # ax[0].set_title('Core.py observation (HW instead of WH)')
-        # ax[1].imshow(robot_obs)
-        # ax[1].set_title('Robot obs core.py (HW instead of WH)')
-        # ax[2].imshow(task_obs)
-        # ax[2].set_title('Task obs in core.py (HW instead of WH)')
-    
-        # plt.show()
-
-      #  achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
         joint_angles_required = self.robot.inverse_kinematics(
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
         )[:7].astype(np.float32) # remove fingers angles
 
-        # self.observation_space = spaces.Dict( # Try this
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation.shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=current_joint_angles.shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=joint_angles_required.shape, dtype=np.float32) 
-        #     )
-        # )
+        achieved_goal = self.task.get_achieved_goal().astype(np.float32)
+        desired_goal = self.task.get_goal().astype(np.float32)
+        ee_pos = np.array(self.robot.get_ee_position(), dtype=np.float32)
+        gripper_angle = np.array([self.robot.get_fingers_width()], dtype=np.float32)
+        state = np.concatenate([ee_pos, gripper_angle], axis=0)
 
         return {
             "observation": observation,
-            "achieved_goal": current_joint_angles,
-            "desired_goal": joint_angles_required
+            "achieved_goal": achieved_goal,
+            "desired_goal": desired_goal,
+            "state": state
        #     "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
         }
 
