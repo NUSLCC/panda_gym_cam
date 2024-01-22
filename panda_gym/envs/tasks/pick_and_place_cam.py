@@ -108,9 +108,17 @@ class PickAndPlaceCam(Task):
         nearVal = 0.01
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+
+
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
         rgb_img = np.array(rgb_img).reshape(cam_height, cam_width, 4)[:, :, :3]
-        return rgb_img
+
+        depth_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        depth_img = np.array(depth_img).reshape((cam_height, cam_width))
+        depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
+        depth_img = depth_img[..., np.newaxis]
+
+        return rgb_img, depth_img
 
     def get_achieved_goal(self) -> np.ndarray:
         object_position = np.array(self.sim.get_base_position("object"))
@@ -125,8 +133,11 @@ class PickAndPlaceCam(Task):
         return np.concatenate([object_position, object_rotation, object_velocity, object_angular_velocity])
 
     def reset(self) -> None:
-        self.obj_range_low, self.obj_range_high = generate_semicircle_object_range()
-        self.goal_range_low, self.goal_range_high = generate_semicircle_object_range() # both object and goal must be within reach of Panda arm
+        # self.obj_range_low, self.obj_range_high = generate_semicircle_object_range()
+        # self.goal_range_low, self.goal_range_high = generate_semicircle_object_range() # both object and goal must be within reach of Panda arm
+        self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
+        self.goal_range_low, self.goal_range_high = generate_object_range()
+        self.obj_range_low, self.obj_range_high = generate_object_range()
         self.goal = self._sample_goal()
         object_position = self._sample_object()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))

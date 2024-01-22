@@ -134,9 +134,17 @@ class PandaCam(PyBulletRobot):
         nearVal = 0.01
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+        
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
         rgb_img = np.array(rgb_img).reshape(cam_height, cam_width, 4)[:, :, :3]
-        return rgb_img
+
+        depth_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        depth_img = np.array(depth_img).reshape((cam_height, cam_width))
+        depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
+        depth_img = depth_img[..., np.newaxis]
+
+        return rgb_img, depth_img
+
 
     def reset(self) -> None:
         self.set_joint_neutral()
