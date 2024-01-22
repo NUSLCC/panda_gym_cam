@@ -258,8 +258,9 @@ class RobotTaskEnv(gym.Env):
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(-10.0, 10.0, shape=observation_shape, dtype=np.float16),
-                desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float16),
                 achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=np.float16),
+                desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=np.float16),
+                
             )
         )
         self.action_space = self.robot.action_space
@@ -443,21 +444,22 @@ class RobotCamTaskEnv(gym.Env):
             object_in_cam: bool = True,
             normalize_image: bool = True,
             with_depth: bool = True,
+            data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
         robot_rgb, robot_dep = self.robot.get_obs()
         task_rgb, task_dep = self.task.get_obs()
 
         if normalize_image:
-            robot_rgb = robot_rgb.astype(np.float16) / 255.0 # [H, W, C]
-            task_rgb = task_rgb.astype(np.float16) / 255.0 # [H, W, C]
+            robot_rgb = robot_rgb.astype(data_type) / 255.0 # [H, W, C]
+            task_rgb = task_rgb.astype(data_type) / 255.0 # [H, W, C]
         else:
             assert with_depth == False, "RGB mode has no depth"
             robot_rgb = robot_rgb.astype(np.uint8)
             task_rgb = task_rgb.astype(np.uint8)
         
         if with_depth:
-            robot_obs = np.concatenate((robot_rgb, robot_dep.astype(np.float16)), axis=-1)
-            task_obs = np.concatenate((task_rgb, task_dep.astype(np.float16)), axis=-1)
+            robot_obs = np.concatenate((robot_rgb, robot_dep.astype(data_type)), axis=-1)
+            task_obs = np.concatenate((task_rgb, task_dep.astype(data_type)), axis=-1)
         else:
             robot_obs = robot_rgb
             task_obs = task_rgb
@@ -471,10 +473,10 @@ class RobotCamTaskEnv(gym.Env):
         #     robot_obs = np.zeros_like(task_obs).astype(np.float16)
         #     observation = np.concatenate([robot_obs, task_obs])
 
-        current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float16)
-        desired_goal_coords = self.task.get_goal().astype(np.float16)
+        current_joint_angles = self.robot.get_arm_joint_angles().astype(data_type)
+        desired_goal_coords = self.task.get_goal().astype(data_type)
         desired_joint_angles = self.robot.inverse_kinematics(
-            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(np.float16) # remove fingers angles
+            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(data_type) # remove fingers angles
 
         return {
             "observation": observation,
@@ -490,9 +492,9 @@ class RobotCamTaskEnv(gym.Env):
             self.task.reset()
         observation = self._get_obs()
 
-        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()),
-                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal())}
+        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
+                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal())}
         return observation, info
 
     def save_state(self) -> int:
@@ -531,12 +533,12 @@ class RobotCamTaskEnv(gym.Env):
         observation = self._get_obs(object_in_active_cam)
 
         # An episode is terminated if the agent has reached the target
-        terminated  = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()))
-        success     = bool(self.task.is_success(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()))
-        failure     = bool(self.task.is_failure(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal()))
+        terminated  = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
+        success     = bool(self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
+        failure     = bool(self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
         truncated = False
         info = {"is_terminated": terminated, "is_success": success, "is_failure": failure}
-        reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float16), self.task.get_goal(), info))
+        reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal(), info))
         return observation, reward, terminated, truncated, info
 
     def close(self) -> None:
