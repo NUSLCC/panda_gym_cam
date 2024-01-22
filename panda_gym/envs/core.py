@@ -451,16 +451,31 @@ class RobotCamTaskEnv(gym.Env):
 
     def _get_obs(
             self, 
-            object_in_cam: bool = True
+            object_in_cam: bool = True,
+            normalize_image: bool = True,
+            with_depth: bool = True,
+            data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
-        robot_obs = self.robot.get_obs().astype(np.uint8)  # robot state
-        task_obs = self.task.get_obs().astype(np.uint8)  # object position, velococity, etc...
-        # observation = robot_obs
-        if object_in_cam: # pass in both active and static camera img
-            observation = np.concatenate([robot_obs, task_obs])
-        else: # only pass in static cam
-            robot_obs = np.zeros_like(task_obs).astype(np.uint8)
-            observation = np.concatenate([robot_obs, task_obs])
+        robot_rgb, robot_dep = self.robot.get_obs()
+        task_rgb, task_dep = self.task.get_obs()
+
+        if normalize_image:
+            robot_rgb = robot_rgb.astype(data_type) / 255.0 # [H, W, C]
+            task_rgb = task_rgb.astype(data_type) / 255.0 # [H, W, C]
+        else:
+            assert with_depth == False, "RGB mode has no depth"
+            robot_rgb = robot_rgb.astype(np.uint8)
+            task_rgb = task_rgb.astype(np.uint8)
+        
+        if with_depth:
+            robot_obs = np.concatenate((robot_rgb, robot_dep.astype(data_type)), axis=-1)
+            task_obs = np.concatenate((task_rgb, task_dep.astype(data_type)), axis=-1)
+        else:
+            robot_obs = robot_rgb
+            task_obs = task_rgb
+
+        observation = np.concatenate((robot_obs, task_obs), axis=-1)
+        observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
 
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
