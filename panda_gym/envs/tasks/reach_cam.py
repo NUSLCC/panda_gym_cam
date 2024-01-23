@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
-from panda_gym.utils import generate_semicircle_object_range
 
 class ReachCam(Task):
     def __init__(
@@ -16,19 +15,17 @@ class ReachCam(Task):
         get_ee_position,
         reward_type="dense",
         distance_threshold=0.05,
-        image_overlap_threshold=0.80,
-        goal_range=0.3,
+        goal_range=0.5,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
-        self.image_overlap_threshold = image_overlap_threshold
         self.distance_threshold=distance_threshold
         self.far_distance_threshold = 1.0
         self.object_size = 0.04
-        self.object_velocity_max = [0.15, 0.15, 0] # (x,y,z) velocity 
-        self.get_ee_position = get_ee_position
-        self.goal_range_low = None
-        self.goal_range_high = None
+        self.object_velocity_max = [0.15, 0.15, 0] # (x,y,z) velocity
+        self.get_ee_position = get_ee_position 
+        self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
+        self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
         self.cam_link = 13
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
@@ -114,12 +111,10 @@ class ReachCam(Task):
         return rgb_img, depth_img
 
     def get_achieved_goal(self) -> np.ndarray:
-        ee_position = np.array(self.get_ee_position())
+        ee_position = np.array(self.get_ee_position)
         return ee_position
 
     def reset(self) -> None:
-        self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
-        self.goal_range_low, self.goal_range_high = generate_semicircle_object_range()
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
 
