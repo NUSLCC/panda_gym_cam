@@ -6,7 +6,7 @@ from stable_baselines3.common.logger import configure
 from datetime import datetime
 import gymnasium as gym
 from stable_baselines3.common.torch_layers import CombinedExtractor
-from panda_gym.utils import CustomCombinedExtractor
+from panda_gym.utils import CustomCombinedExtractor, CustomConvNextExtractor
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array

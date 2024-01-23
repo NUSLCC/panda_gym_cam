@@ -14,6 +14,80 @@ from stable_baselines3.common.type_aliases import TensorDict
 from typing import Dict
 from gymnasium import spaces
 import gymnasium as gym
+from torchvision.models import convnext_base, ConvNeXt_Base_Weights
+
+class CustomConvNext(BaseFeaturesExtractor):
+    """
+    :param observation_space: (gym.Space)
+    :param features_dim: (int) Number of features extracted.
+        This corresponds to the number of unit for the last layer.
+    """
+
+    def __init__(
+        self, 
+        observation_space: gym.Space, 
+        features_dim: int = 256,
+        device_id: int = 0,
+    ) -> None:
+        super().__init__(observation_space, features_dim = features_dim)
+
+        self.device = torch.device("cuda:" + str(device_id))
+
+        weights = ConvNeXt_Base_Weights.DEFAULT
+        self.model = convnext_base(weights=weights)
+        self.model = self.model.to(self.device)
+
+        self.preprocess = weights.transforms()
+
+        # for param in self.model.parameters():
+        #     param.requires_grad = False
+        
+        self.linear = nn.Sequential(nn.Linear(1000, features_dim), nn.ReLU()).to(self.device)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        # print("observations in CustomConvNext:", observations.shape, observations.type())
+        preprocessed = torch.stack([self.preprocess(img) for img in observations]).to(self.device)
+        # print("preprocessed:", preprocessed.shape, preprocessed.type())
+        model = self.model(preprocessed)
+        # print("model:", model.shape, model.type())
+        linear = self.linear(model)
+        # print("linear:", linear.shape, linear.type())
+        return linear
+
+class CustomConvNextExtractor(BaseFeaturesExtractor):
+
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        cnn_output_dim: int = 512,
+        device_id: int = 0,
+    ) -> None:
+        super().__init__(observation_space, features_dim=cnn_output_dim)
+
+        extractors: Dict[str, nn.Module] = {}
+
+        total_concat_size = 0
+        for key, subspace in observation_space.spaces.items():
+            if key == "observation":
+                extractors[key] = CustomConvNext(subspace, features_dim=cnn_output_dim, device_id=device_id)
+                total_concat_size += cnn_output_dim
+            else:
+                # The observation key is a vector, flatten it if needed
+                extractors[key] = nn.Flatten()
+                total_concat_size += get_flattened_obs_dim(subspace)
+
+        self.extractors = nn.ModuleDict(extractors)
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> torch.Tensor:
+        encoded_tensor_list = []
+
+        for key, extractor in self.extractors.items():
+            encoded_tensor_list.append(extractor(observations[key].to(torch.float32)))
+        return torch.cat(encoded_tensor_list, dim=1)
+
 
 class NatureCNN(BaseFeaturesExtractor):
     """
@@ -64,7 +138,6 @@ class NatureCNN(BaseFeaturesExtractor):
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.linear(self.cnn(observations))
-
 
 class CustomCombinedExtractor(BaseFeaturesExtractor):
     """
