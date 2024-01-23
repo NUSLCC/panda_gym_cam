@@ -20,11 +20,6 @@ from PIL import Image
 
 class NatureCNN(BaseFeaturesExtractor):
     """
-    CNN from DQN Nature paper:
-        Mnih, Volodymyr, et al.
-        "Human-level control through deep reinforcement learning."
-        Nature 518.7540 (2015): 529-533.
-
     :param observation_space:
     :param features_dim: Number of features extracted.
         This corresponds to the number of unit for the last layer.
@@ -38,7 +33,6 @@ class NatureCNN(BaseFeaturesExtractor):
         self,
         observation_space: gym.Space,
         features_dim: int = 512,
-        normalized_image: bool = False,
     ) -> None:
         assert isinstance(observation_space, spaces.Box), (
             "NatureCNN must be used with a gym.spaces.Box ",
@@ -118,22 +112,6 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
             encoded_tensor_list.append(extractor(observations[key].to(torch.float32)))
         return torch.cat(encoded_tensor_list, dim=1)
     
-    # def preprocessing(self, raw_observation: torch.Tensor) -> torch.Tensor:
-    #     observations = raw_observation.permute(0, 3, 1, 2) # [batch, H, W, C] -> [batch, C, H, W]
-    #     # RGB mode, normalize all channels
-    #     if observations.shape[1] == 6:
-    #         observations = observations / 255.0
-    #     # RGBD mode, only normalize rgb channels
-    #     elif observations.shape[1] == 8:
-    #         normalization_mat = torch.ones_like(observations).float()
-    #         normalization_mat[:, 0:3 ,: , :] = 1/255.0
-    #         normalization_mat[:, 4:7 ,: , :] = 1/255.0
-    #         observations = observations * normalization_mat
-    #     else:
-    #         raise Exception("Observation Input Shape Error")
-    #     return observations
-
-
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
 
@@ -296,46 +274,6 @@ def generate_semicircle_object_range():
 
     return obj_range_low, obj_range_high
 
-def sample_object_obstacle_goal(object_size, goal_range_low, goal_range_high, object_obstacle_distance, obstacle_size, obstacle_1_pos, obstacle_2_pos):
-    """
-    Calculates the (x,y,z) array goal, such that it is inside reachable area of Panda arm and a certain distance away from obstacles
-     
-    Args:
-        object_size (float): radius of the object 
-        obj_range_low (np.ndarray): coordinates of the minimum of obj range
-        obj_range_high (np.ndarray): coordinates of the maximum of obj range
-        object_obstacle_distance (float): Minimum distance from object to obstacles in m
-        obstacle_size (float): Half extent of the obstacle
-        obstacle_1_pos (np.ndarray): (x,y,z) array of obstacle 1 pos
-        obstacle_2_pos (np.ndarray): (x,y,z) array of obstacle 2 pos
-         
-    Returns: 
-        obj_range_low (np.ndarray): coordinates of the minimum of obj range
-        obj_range_high (np.ndarray): coordinates of the maximum of obj range
-    """
-
-
-    obstacle_1_x, obstacle_1_y = obstacle_1_pos[0], obstacle_1_pos[1]
-    obstacle_2_x, obstacle_2_y = obstacle_2_pos[0], obstacle_2_pos[1]
-
-    exclude_ranges = {
-        'x': [(obstacle_1_x - obstacle_size - object_obstacle_distance, obstacle_1_x + obstacle_size + object_obstacle_distance), (obstacle_2_x - obstacle_size - object_obstacle_distance, obstacle_2_x + obstacle_size + object_obstacle_distance)],
-        'y': [(obstacle_1_y - obstacle_size - object_obstacle_distance, obstacle_1_y + obstacle_size + object_obstacle_distance), (obstacle_2_x - obstacle_size - object_obstacle_distance, obstacle_2_x + obstacle_size + object_obstacle_distance)]
-    }
-
-    while True:
-        goal = np.array([0.0, 0.0, object_size / 2])  # z offset for the sphere center
-        noise = np.random.uniform(goal_range_low, goal_range_high)
-        goal += noise
-
-        if (
-        not any(i[0] <= goal[0] <= i[1] for i in exclude_ranges['x']) and  # if sampled x value is not within the exclude ranges
-        not any(j[0] <= goal[1] <= j[1] for j in exclude_ranges['y']) # if sampled y value is not within the exclude ranges
-        ):
-            break # if sampled x or y value is inside exclude ranges, sample again 
-
-    return goal
-
 def colorjitter(img, brightness, contrast, saturation, hue):
     """
     Applies color jitter to the input image
@@ -368,56 +306,6 @@ def show_image(image,title=''):
     plt.title(title, fontsize=16)
     plt.axis('off')
     return
-
-def run_one_image(img, model):
-    imagenet_mean = np.array([0.485, 0.456, 0.406])
-    imagenet_std = np.array([0.229, 0.224, 0.225])
-    x = torch.tensor(img)
-
-    # make it a batch-like
-    x = x.unsqueeze(dim=0)
-    x = torch.einsum('nhwc->nchw', x)
-
-    # run MAE
-    loss, y, mask = model(x.float(), mask_ratio=0.75)
-    y = model.unpatchify(y)
-    y = torch.einsum('nchw->nhwc', y).detach().cpu()
-
-    # visualize the mask
-    mask = mask.detach()
-    mask = mask.unsqueeze(-1).repeat(1, 1, model.patch_embed.patch_size[0]**2 *3)  # (N, H*W, p*p*3)
-    mask = model.unpatchify(mask)  # 1 is removing, 0 is keeping
-    mask = torch.einsum('nchw->nhwc', mask).detach().cpu()
-    
-    x = torch.einsum('nchw->nhwc', x)
-
-    # masked image
-    im_masked = x * (1 - mask)
-
-    # MAE reconstruction pasted with visible patches
-    im_paste = x * (1 - mask) + y * mask
-
-    # Convert tensor to RGB array with reverse normalization
-
-    im_paste_rgb = torch.clip((im_paste * imagenet_std + imagenet_mean) * 255, 0, 255).int().numpy() # return this later
-
-    # make the plt figure larger
-    plt.rcParams['figure.figsize'] = [24, 24]
-
-    plt.subplot(1, 4, 1)
-    show_image(x[0], "original")
-
-    plt.subplot(1, 4, 2)
-    show_image(im_masked[0], "masked")
-
-    plt.subplot(1, 4, 3)
-    show_image(y[0], "reconstruction")
-
-    plt.subplot(1, 4, 4)
-    show_image(im_paste[0], "reconstruction + visible")
-
-    plt.tight_layout()
-    plt.show()
 
 def velocity_calculator(
     target_position: np.ndarray,
