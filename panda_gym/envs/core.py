@@ -153,10 +153,6 @@ class PyBulletRobot(ABC):
         """
         inverse_kinematics = self.sim.inverse_kinematics(self.body_name, link=link, position=position, orientation=orientation)
         return inverse_kinematics
-    
-    @abstractmethod
-    def object_in_cam(self) -> np.ndarray:
-        """Returns whether the target object is within the fov of the panda camera. This is true if there is one or more green pixel."""
 
     @abstractmethod
     def get_arm_joint_angles(self) -> np.ndarray:
@@ -441,9 +437,8 @@ class RobotCamTaskEnv(gym.Env):
 
     def _get_obs(
             self, 
-            object_in_cam: bool = True,
-            normalize_image: bool = True,
-            with_depth: bool = True,
+            normalize_image: bool = False,
+            with_depth: bool = False,
             data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
         robot_rgb, robot_dep = self.robot.get_obs()
@@ -467,20 +462,14 @@ class RobotCamTaskEnv(gym.Env):
         observation = np.concatenate((robot_obs, task_obs), axis=-1)
         observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
 
-        # if object_in_cam: # pass in both active and static camera img
-        #     observation = np.concatenate([robot_obs, task_obs])
-        # else: # only pass in static cam
-        #     robot_obs = np.zeros_like(task_obs).astype(np.float16)
-        #     observation = np.concatenate([robot_obs, task_obs])
-
-        current_joint_angles = self.robot.get_arm_joint_angles().astype(data_type)
+        achieved_joint_angles = self.robot.get_arm_joint_angles().astype(data_type)
         desired_goal_coords = self.task.get_goal().astype(data_type)
         desired_joint_angles = self.robot.inverse_kinematics(
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(data_type) # remove fingers angles
 
         return {
             "observation": observation,
-            "achieved_goal": current_joint_angles,
+            "achieved_goal": achieved_joint_angles,
             "desired_goal": desired_joint_angles
         }
 
@@ -528,9 +517,7 @@ class RobotCamTaskEnv(gym.Env):
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
         self.sim.step()
-     #   contact_points = self.task.is_in_collision()
-        object_in_active_cam = bool(self.robot.object_in_cam())
-        observation = self._get_obs(object_in_active_cam)
+        observation = self._get_obs()
 
         # An episode is terminated if the agent has reached the target
         terminated  = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
