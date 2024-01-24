@@ -10,6 +10,7 @@ from panda_gym.pybullet import PyBullet
 from panda_gym.utils import distance
 from panda_gym.utils import generate_object_range
 from panda_gym.utils import generate_semicircle_object_range
+from panda_gym.utils import calculate_object_range
 
 
 class PickAndPlaceCam(Task):
@@ -136,8 +137,8 @@ class PickAndPlaceCam(Task):
         # self.obj_range_low, self.obj_range_high = generate_semicircle_object_range()
         # self.goal_range_low, self.goal_range_high = generate_semicircle_object_range() # both object and goal must be within reach of Panda arm
         self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
-        self.goal_range_low, self.goal_range_high = generate_object_range()
-        self.obj_range_low, self.obj_range_high = generate_object_range()
+        self.goal_range_low, self.goal_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
+        self.obj_range_low, self.obj_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
         self.goal = self._sample_goal()
         object_position = self._sample_object()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
