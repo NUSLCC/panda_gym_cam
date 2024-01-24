@@ -49,15 +49,16 @@ class NatureCNN(BaseFeaturesExtractor):
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
             nn.Flatten(),
-        ).to(torch.float32)
+        )
 
         # Compute flatten shape by doing one forward pass
         with torch.no_grad():
-            sample_array = observation_space.sample()[None]
-            sample_tensor = torch.tensor(sample_array, dtype=torch.float32)
-            n_flatten = self.cnn(sample_tensor).shape[1]
+            # sample_array = observation_space.sample()[None]
+            # sample_tensor = torch.tensor(sample_array, dtype=torch.float32)
+            # n_flatten = self.cnn(sample_tensor).shape[1]
+            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
         
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU()).to(torch.float32)
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.linear(self.cnn(observations))
@@ -83,7 +84,6 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         self,
         observation_space: spaces.Dict,
         cnn_output_dim: int = 512,
-        normalized_image: bool = False,
     ) -> None:
         # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
         super().__init__(observation_space, features_dim=cnn_output_dim)
@@ -93,7 +93,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
+                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
@@ -109,7 +109,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         encoded_tensor_list = []
 
         for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key].to(torch.float32)))
+            encoded_tensor_list.append(extractor(observations[key]))
         return torch.cat(encoded_tensor_list, dim=1)
     
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
