@@ -158,6 +158,7 @@ class PyBulletRobot(ABC):
     def get_arm_joint_angles(self) -> np.ndarray:
         """Returns array of current arm joint angles"""
 
+
 class Task(ABC):
     """Base class for tasks.
     Args:
@@ -203,13 +204,10 @@ class Task(ABC):
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
-    # @abstractmethod
-    # def get_obj_pos_rotation(self) -> np.ndarray:
-    #     """Returns obj pos and velocity."""
+    @abstractmethod
+    def set_target_position(self) -> None:
+         """Set the target to a new position."""
 
-    # @abstractmethod
-    # def is_in_collision(self) -> np.ndarray:
-    #     """Returns contact point information."""
 
 class RobotTaskEnv(gym.Env):
     """Robotic task goal env, as the junction of a task and a robot.
@@ -364,6 +362,7 @@ class RobotTaskEnv(gym.Env):
             roll=self.render_roll,
         )
 
+
 class RobotCamTaskEnv(gym.Env):
     """Robotic task goal env, as the junction of a task and a robot, with L515 and D405 cameras.
 
@@ -481,9 +480,12 @@ class RobotCamTaskEnv(gym.Env):
             self.task.reset()
         observation = self._get_obs()
 
-        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
-                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal())}
+        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), 
+                                                         self.task.get_goal().astype(np.float32)),
+                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), 
+                                                   self.task.get_goal().astype(np.float32)),
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), 
+                                                   self.task.get_goal().astype(np.float32))}
         return observation, info
 
     def save_state(self) -> int:
@@ -516,6 +518,7 @@ class RobotCamTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
+        # self.task.set_target_position()
         self.sim.step()
         observation = self._get_obs()
 

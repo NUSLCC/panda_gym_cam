@@ -1,4 +1,7 @@
 import numpy as np
+import sys
+sys.path.append("/home/lcc/GitRepo/panda-gym")
+sys.path.append("/Users/chenchen/GitRepo/panda_gym_cam")
 from panda_gym.pybullet import PyBullet
 from panda_gym.envs.tasks.reach import Reach
 from panda_gym.envs.tasks.reach_cam import ReachCam

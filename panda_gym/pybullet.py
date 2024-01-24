@@ -68,7 +68,7 @@ class PyBullet:
         for _ in range(self.n_substeps):
             self.physics_client.stepSimulation()
 
-    def close(self) -> None:
+    def close(self) -> None: 
         """Close the simulation."""
         if self.physics_client.isConnected():
             self.physics_client.disconnect()

@@ -1,4 +1,5 @@
 from typing import Any, Dict, Optional
+from numpy import ndarray
 
 import pybullet as p
 import numpy as np
@@ -14,7 +15,7 @@ class ReachCam(Task):
         sim,
         get_ee_position,
         reward_type="dense",
-        distance_threshold=0.05,
+        distance_threshold=0.02,
         goal_range=0.5,
     ) -> None:
         super().__init__(sim)
@@ -22,13 +23,18 @@ class ReachCam(Task):
         self.distance_threshold=distance_threshold
         self.far_distance_threshold = 1.0
         self.object_size = 0.04
-        self.object_velocity_max = [0.15, 0.15, 0] # (x,y,z) velocity
         self.get_ee_position = get_ee_position 
         self.goal_range_low = np.array([-goal_range / 2, -goal_range / 2, 0])
         self.goal_range_high = np.array([goal_range / 2, goal_range / 2, goal_range])
         self.cam_link = 13
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
+
+        self.target_start_position=np.array([0.0, -0.4, self.object_size / 2])
+        self.target_moving_velocity = np.array([0.0, 0.15, 0])
+        self.target_current_step = 0.0
+        self.target_step_length = 0.01
+        
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -36,23 +42,23 @@ class ReachCam(Task):
         self.sim.create_plane(z_offset=-0.4)
         self.sim.create_box(
             body_name="black_panda_table",
-            half_extents=np.array([0.32, 0.32, 0.398/2]),
+            half_extents=np.array([0.32, 0.32, 0.38/2]),
             mass=0.0,
-            position=np.array([-0.68, 0, -0.398/2]),
+            position=np.array([-0.68, 0, -0.21]),
             rgba_color=np.array([0, 0, 0, 1]),
         )
         self.sim.create_box(
             body_name="silver_table_block",
             half_extents=np.array([0.2, 0.2, 0.01]),
             mass=0.0,
-            position=np.array([-0.68, 0, -0.0001]),
+            position=np.array([-0.68, 0, -0.01]),
             rgba_color=np.array([192/255, 192/255, 192/255, 1]),
         )
         self.sim.create_box(
-            body_name="white_table",
-            half_extents=np.array([0.4, 0.64, 0.398/2]), 
+            body_name="white_target_table",
+            half_extents=np.array([0.4, 0.64, 0.4/2]), 
             mass=0.0,
-            position=np.array([0.04, 0, -0.398/2]),
+            position=np.array([0.04, 0, -0.4/2]),
             rgba_color=np.array([1, 1, 1, 1]),
         )
         self.sim.create_sphere(
@@ -60,16 +66,15 @@ class ReachCam(Task):
             radius=self.object_size/2,
             mass=0.0,
             ghost=True,
-            position=np.array([0.0, 0.0, self.object_size / 2]),
+            position=self.target_start_position,
             rgba_color=np.array([0.1, 0.9, 0.1, 1]),
         )
-        self.sim.loadURDF( 
+        self.sim.loadURDF(
             body_name="stationary_camera",
             fileName="URDF_files/L515_cam_with_stand.urdf",
             basePosition=[0.65, 0, 0.5-0.3],
             useFixedBase=True,
         )
-        self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
 
     def get_obs(self) -> np.ndarray:
         rgb_img = self.render_from_stationary_cam() 
@@ -111,12 +116,27 @@ class ReachCam(Task):
         return rgb_img, depth_img
 
     def get_achieved_goal(self) -> np.ndarray:
-        ee_position = np.array(self.get_ee_position)
+        ee_position = np.array(self.get_ee_position())
         return ee_position
+    
+    def get_goal(self) -> ndarray:
+        goal = self.sim.get_base_position("target")
+        return goal 
+
+    # def reset(self) -> None:
+    #     self.goal = self._sample_goal()
+    #     self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+    #     self.target_current_step = 0
 
     def reset(self) -> None:
-        self.goal = self._sample_goal()
-        self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+        self.goal = self.sim.get_base_position("target")
+        self.sim.set_base_pose("target", self.target_start_position, np.array([0.0, 0.0, 0.0, 1.0]))
+        self.sim.set_base_velocity("target", self.target_moving_velocity)
+        self.target_current_step = 0
+
+    def set_target_position(self) -> None:
+        self.target_current_step += self.target_step_length
+        self.sim.set_base_pose("target", self.target_current_step, np.array([0.0, 0.0, 0.0, 1.0]))
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
@@ -129,20 +149,20 @@ class ReachCam(Task):
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=bool)
 
+    def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
+        d = distance(achieved_goal, desired_goal)
+        return np.array(d > self.far_distance_threshold, dtype=bool)
+    
     def is_terminated(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold or d > self.far_distance_threshold, dtype=bool)
 
-    def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
-        return np.array(d > self.far_distance_threshold, dtype=bool)
-
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
         if self.reward_type == "sparse":
-            return -np.array(d > self.distance_threshold, dtype=np.float16)
+            return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
-            return -d.astype(np.float16)
+            return -d.astype(np.float32)
 
     def get_obj_pos_rotation(self) -> np.ndarray:
         return np.array([])  # no obj related pos or rotation
