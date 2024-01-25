@@ -67,6 +67,65 @@ class NatureCNN(BaseFeaturesExtractor):
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.linear(self.cnn(observations))
+    
+
+class DualCNN(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "NatureCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[0]
+        each_input_channels = int(n_input_channels/2)
+
+        self.cnn1 = nn.Sequential(
+            nn.Conv2d(each_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        ).to(torch.float32)
+
+        self.cnn2 = nn.Sequential(
+            nn.Conv2d(each_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        ).to(torch.float32)
+
+        # Compute flatten shape by doing one forward pass
+        with torch.no_grad():
+            sample_array = observation_space.sample()[None]
+            channel_dim = sample_array.shape[1]
+            each_channel_dim = int(channel_dim/2)
+            sample_tensor1 = torch.tensor(sample_array[:, :each_channel_dim, :, :], dtype=torch.float32)
+            sample_tensor2 = torch.tensor(sample_array[:, each_channel_dim:, :, :], dtype=torch.float32)
+
+            n_flatten1 = self.cnn1(sample_tensor1).shape[1]
+            n_flatten2 = self.cnn2(sample_tensor2).shape[1]
+        
+        self.linear1 = nn.Sequential(nn.Linear(n_flatten1, int(features_dim/2)), nn.ReLU()).to(torch.float32)
+        self.linear2 = nn.Sequential(nn.Linear(n_flatten2, int(features_dim/2)), nn.ReLU()).to(torch.float32)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        channel_dim = observations.shape[1]
+        each_channel_dim = int(channel_dim/2)
+        observations1 = observations[:, :each_channel_dim, :, :]
+        observations2 = observations[:, each_channel_dim:, :, :]
+        forward1 = self.linear1(self.cnn1(observations1))
+        forward2 = self.linear2(self.cnn2(observations2))
+        return torch.cat((forward1, forward2), dim=1)
 
 
 class CustomCombinedExtractor(BaseFeaturesExtractor):
@@ -99,7 +158,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
+                extractors[key] = DualCNN(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
