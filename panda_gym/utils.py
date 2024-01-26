@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import torch
+import torchvision.ops
 from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -16,6 +17,105 @@ from gymnasium import spaces
 import gymnasium as gym
 from timm import create_model
 from PIL import Image
+
+
+class DeformableConv2d(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=3,
+                 stride=1,
+                 padding=1,
+                 dilation=1,
+                 bias=False):
+        super(DeformableConv2d, self).__init__()
+
+        assert type(kernel_size) == tuple or type(kernel_size) == int
+
+        kernel_size = kernel_size if type(kernel_size) == tuple else (kernel_size, kernel_size)
+        self.stride = stride if type(stride) == tuple else (stride, stride)
+        self.padding = padding
+        self.dilation = dilation
+
+        self.offset_conv = nn.Conv2d(in_channels,
+                                     2 * kernel_size[0] * kernel_size[1],
+                                     kernel_size=kernel_size,
+                                     stride=stride,
+                                     padding=self.padding,
+                                     dilation=self.dilation,
+                                     bias=True)
+
+        nn.init.constant_(self.offset_conv.weight, 0.)
+        nn.init.constant_(self.offset_conv.bias, 0.)
+
+        self.modulator_conv = nn.Conv2d(in_channels,
+                                        1 * kernel_size[0] * kernel_size[1],
+                                        kernel_size=kernel_size,
+                                        stride=stride,
+                                        padding=self.padding,
+                                        dilation=self.dilation,
+                                        bias=True)
+
+        nn.init.constant_(self.modulator_conv.weight, 0.)
+        nn.init.constant_(self.modulator_conv.bias, 0.)
+
+        self.regular_conv = nn.Conv2d(in_channels=in_channels,
+                                      out_channels=out_channels,
+                                      kernel_size=kernel_size,
+                                      stride=stride,
+                                      padding=self.padding,
+                                      dilation=self.dilation,
+                                      bias=bias)
+
+    def forward(self, x):
+        # h, w = x.shape[2:]
+        # max_offset = max(h, w)/4.
+
+        offset = self.offset_conv(x)  # .clamp(-max_offset, max_offset)
+        modulator = 2. * torch.sigmoid(self.modulator_conv(x))
+        # op = (n - (k * d - 1) + 2p / s)
+        x = torchvision.ops.deform_conv2d(input=x,
+                                          offset=offset,
+                                          weight=self.regular_conv.weight,
+                                          bias=self.regular_conv.bias,
+                                          padding=self.padding,
+                                          mask=modulator,
+                                          stride=self.stride,
+                                          dilation=self.dilation)
+        return x
+
+
+class DeformableCNN(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "NatureCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[0] # last channel is feature channel from raw data [B, C H, W]
+        self.cnn = nn.Sequential(
+            DeformableConv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            DeformableConv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            DeformableConv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute flatten shape by doing one forward pass
+        with torch.no_grad():
+            n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
+        
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        return self.linear(self.cnn(observations))
 
 
 class NatureCNN(BaseFeaturesExtractor):
@@ -158,7 +258,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = DualCNN(subspace, features_dim=cnn_output_dim)
+                extractors[key] = DeformableCNN(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
@@ -174,24 +274,9 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         encoded_tensor_list = []
 
         for key, extractor in self.extractors.items():
-            encoded_tensor_list.append(extractor(observations[key].to(torch.float32)))
+            encoded_tensor_list.append(extractor(observations[key]))
         return torch.cat(encoded_tensor_list, dim=1)
     
-    # def preprocessing(self, raw_observation: torch.Tensor) -> torch.Tensor:
-    #     observations = raw_observation.permute(0, 3, 1, 2) # [batch, H, W, C] -> [batch, C, H, W]
-    #     # RGB mode, normalize all channels
-    #     if observations.shape[1] == 6:
-    #         observations = observations / 255.0
-    #     # RGBD mode, only normalize rgb channels
-    #     elif observations.shape[1] == 8:
-    #         normalization_mat = torch.ones_like(observations).float()
-    #         normalization_mat[:, 0:3 ,: , :] = 1/255.0
-    #         normalization_mat[:, 4:7 ,: , :] = 1/255.0
-    #         observations = observations * normalization_mat
-    #     else:
-    #         raise Exception("Observation Input Shape Error")
-    #     return observations
-
 
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.

@@ -437,7 +437,7 @@ class RobotCamTaskEnv(gym.Env):
 
     def _get_obs(
             self, 
-            normalize_image: bool = True,
+            normalize_image: bool = False,
             with_depth: bool = False,
             data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
