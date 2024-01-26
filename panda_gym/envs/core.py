@@ -217,9 +217,9 @@ class Task(ABC):
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
-    # @abstractmethod
-    # def get_obj_pos_rotation(self) -> np.ndarray:
-    #     """Returns obj pos and velocity."""
+    @abstractmethod
+    def get_obj_pos_rotation(self) -> np.ndarray:
+        """Returns obj pos and velocity."""
 
     # @abstractmethod
     # def is_in_collision(self) -> np.ndarray:
@@ -422,14 +422,17 @@ class RobotCamTaskEnv(gym.Env):
         desired_goal_dtype = observation["desired_goal"].dtype
         state_shape = observation["state"].shape
         state_dtype = observation["state"].dtype
-     #   object_pos_rotation_shape = observation["object_pos_rotation"].shape
+        object_pos_rotation_shape = observation["object_pos_rotation"].shape
+        object_pos_rotation_dtype = observation["object_pos_rotation"].dtype
+
+
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=observation_dtype),
-                achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=achieved_goal_dtype), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=desired_goal_dtype),
-                state=spaces.Box(-5.0, 5.0, shape=state_shape, dtype=state_dtype) 
-           #     object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=np.float32),
+                achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=achieved_goal_dtype), 
+                desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=desired_goal_dtype),
+                state=spaces.Box(-10.0, 10.0, shape=state_shape, dtype=state_dtype), 
+                object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=object_pos_rotation_dtype),
             )
         )
         self.action_space = self.robot.action_space
@@ -492,13 +495,14 @@ class RobotCamTaskEnv(gym.Env):
         ee_pos = np.array(self.robot.get_ee_position(), dtype=data_type)
         gripper_angle = np.array([self.robot.get_fingers_width()], dtype=data_type)
         state = np.concatenate([ee_pos, gripper_angle], axis=0)
+        object_pos_rotation = self.task.get_obj_pos_rotation().astype(data_type)
 
         return {
             "observation": observation,
             "achieved_goal": achieved_goal,
             "desired_goal": desired_goal,
-            "state": state
-       #     "object_pos_rotation": self.task.get_obj_pos_rotation().astype(np.float32)
+            "state": state,
+            "object_pos_rotation": object_pos_rotation
         }
 
     def reset(

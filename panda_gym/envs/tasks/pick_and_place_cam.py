@@ -17,15 +17,17 @@ class PickAndPlaceCam(Task):
     def __init__(
         self,
         sim: PyBullet,
+        get_ee_position,
         reward_type: str = "dense",
-        distance_threshold: float = 0.05,
+        distance_threshold: float = 0.1, # originally 0.05
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.object_size = 0.04
-        self.far_distance_threshold = 1.0
+        self.far_distance_threshold = 0.8
         self.object_size = 0.04
+        self.get_ee_position = get_ee_position
         self.goal_range_low = None
         self.goal_range_high = None
         self.obj_range_low = None
@@ -67,7 +69,7 @@ class PickAndPlaceCam(Task):
             half_extents=np.ones(3) * self.object_size / 2,
             mass=1.0,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.1, 0.9, 0.1, 1.0]),
+            rgba_color=np.array([0.0, 1.0, 0.0, 1.0]),
         )
         self.sim.create_box(
             body_name="target",
@@ -75,7 +77,7 @@ class PickAndPlaceCam(Task):
             mass=0.0,
             ghost=True,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0, 78/255, 1.0, 1.0]),
+            rgba_color=np.array([0.0, 0.0, 1.0, 1.0]),
         )
         self.sim.loadURDF( 
             body_name="stationary_camera",
@@ -127,11 +129,11 @@ class PickAndPlaceCam(Task):
 
     def get_obj_pos_rotation(self) -> np.ndarray:
         # position, rotation of the object
-        object_position = self.sim.get_base_position("object") 
+     #   object_position = self.sim.get_base_position("object") 
         object_rotation = self.sim.get_base_rotation("object")
         object_velocity = self.sim.get_base_velocity("object")
         object_angular_velocity = self.sim.get_base_angular_velocity("object")
-        return np.concatenate([object_position, object_rotation, object_velocity, object_angular_velocity])
+        return np.concatenate([object_rotation, object_velocity, object_angular_velocity])
 
     def reset(self) -> None:
         # self.obj_range_low, self.obj_range_high = generate_semicircle_object_range()
@@ -163,14 +165,18 @@ class PickAndPlaceCam(Task):
         return np.array(d < self.distance_threshold, dtype=bool)
 
     def is_terminated(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
+        d = distance(achieved_goal, desired_goal) # distance between object cube and target cube
+        ee_position = np.array(self.get_ee_position())
+        ee_distance = distance(achieved_goal, ee_position) # distance between end effector and object cube
       #  height = self.sim.get_base_position("object")[2]
        # return np.array(d < self.distance_threshold or d > self.far_distance_threshold or height < self.object_size/2, dtype=bool)
-        return np.array(d < self.distance_threshold or d > self.far_distance_threshold, dtype=bool)
+        return np.array(d < self.distance_threshold or ee_distance > self.far_distance_threshold, dtype=bool)
 
     def is_failure(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
-        return np.array(d > self.far_distance_threshold, dtype=bool)
+        ee_position = np.array(self.get_ee_position())
+        ee_distance = distance(achieved_goal, ee_position) # distance between end effector and object cube
+       # d = distance(achieved_goal, desired_goal)
+        return np.array(ee_distance > self.far_distance_threshold, dtype=bool)
     
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
