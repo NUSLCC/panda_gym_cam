@@ -15,6 +15,7 @@ if __name__=="__main__":
     env_id = "PandaPickandPlaceCam-v3"
     num_cpu = 16
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
+    print(f'Action space: {env.action_space}')
     
     # Save a checkpoint every 10000 steps
     checkpoint_callback = CheckpointCallback(
