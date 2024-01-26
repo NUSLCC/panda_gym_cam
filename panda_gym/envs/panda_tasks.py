@@ -140,10 +140,10 @@ class PandaPickandPlaceCamEnv(RobotCamTaskEnv):
 
     def __init__(
         self,
-        render_mode: str = "human",
+        render_mode: str = "rgb_array",
         reward_type: str = "dense",
         control_type: str = "joints",
-        renderer: str = "OpenGL",
+        renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,
         render_target_position: Optional[np.ndarray] = None,
