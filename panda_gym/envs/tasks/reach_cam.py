@@ -30,9 +30,10 @@ class ReachCam(Task):
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
 
-        self.target_start_position=np.array([0.0, -0.4, self.object_size / 2])
-        self.target_moving_velocity = np.array([0.0, 0.15, 0])
-        self.target_current_step = 0.0
+        self.target_start_y_position = -0.5
+        self.target_start_position = np.array([0.0, self.target_start_y_position, self.object_size / 2])
+        # self.target_moving_velocity = np.array([0.0, 0.15, 0])
+        self.target_current_step = self.target_start_y_position
         self.target_step_length = 0.01
         
         with self.sim.no_rendering():
@@ -129,21 +130,21 @@ class ReachCam(Task):
     #     self.target_current_step = 0
 
     def reset(self) -> None:
-        self.goal = self.sim.get_base_position("target")
+        self.goal = self.get_goal()
         self.sim.set_base_pose("target", self.target_start_position, np.array([0.0, 0.0, 0.0, 1.0]))
-        self.sim.set_base_velocity("target", self.target_moving_velocity)
-        self.target_current_step = 0
+        # self.sim.set_base_velocity("target", self.target_moving_velocity)
+        self.target_current_step = self.target_start_y_position
 
     def set_target_position(self) -> None:
         self.target_current_step += self.target_step_length
-        self.sim.set_base_pose("target", self.target_current_step, np.array([0.0, 0.0, 0.0, 1.0]))
+        self.sim.set_base_pose("target", np.array([0.0, self.target_current_step, self.object_size / 2]), np.array([0.0, 0.0, 0.0, 1.0]))
 
-    def _sample_goal(self) -> np.ndarray:
-        """Randomize goal."""
-        goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
-        noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
-        goal += noise
-        return goal
+    # def _sample_goal(self) -> np.ndarray:
+    #     """Randomize goal."""
+    #     goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
+    #     noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
+    #     goal += noise
+    #     return goal
 
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)

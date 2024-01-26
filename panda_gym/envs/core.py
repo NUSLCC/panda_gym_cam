@@ -399,7 +399,7 @@ class RobotCamTaskEnv(gym.Env):
         self.metadata["render_fps"] = 1 / self.sim.dt
         self.robot = robot
         self.task = task
-        observation, _ = self.reset()  # required for init; seed can be changed later
+        observation, info = self.reset()  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         observation_dtype = observation["observation"].dtype
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
@@ -479,13 +479,14 @@ class RobotCamTaskEnv(gym.Env):
             self.robot.reset()
             self.task.reset()
         observation = self._get_obs()
+        goal_data_type = observation["achieved_goal"].dtype
 
-        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), 
-                                                         self.task.get_goal().astype(np.float32)),
-                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), 
-                                                   self.task.get_goal().astype(np.float32)),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), 
-                                                   self.task.get_goal().astype(np.float32))}
+        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(goal_data_type), 
+                                                         self.task.get_goal().astype(goal_data_type)),
+                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(goal_data_type), 
+                                                   self.task.get_goal().astype(goal_data_type)),
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(goal_data_type), 
+                                                   self.task.get_goal().astype(goal_data_type))}
         return observation, info
 
     def save_state(self) -> int:
@@ -518,7 +519,7 @@ class RobotCamTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
-        # self.task.set_target_position()
+        self.task.set_target_position()
         self.sim.step()
         observation = self._get_obs()
 
@@ -552,4 +553,3 @@ class RobotCamTaskEnv(gym.Env):
             pitch=self.render_pitch,
             roll=self.render_roll,
         )
-    
