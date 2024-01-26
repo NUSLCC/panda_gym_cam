@@ -13,7 +13,7 @@ robot1 = PandaCam(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.
 task1= ReachCam(sim, get_ee_position=robot1.get_ee_position)
 
 task1.reset()
-print(task1.get_obs().shape)
+print(task1.get_obs()[0].shape)
 print(task1.get_achieved_goal())
 print(task1.get_goal())
 # print(task1.is_success(task1.get_achieved_goal(), task1.get_goal()))
