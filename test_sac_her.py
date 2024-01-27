@@ -43,17 +43,6 @@ if __name__=="__main__":
     tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_philip4_pickandplace_%H_%M_%d')
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
-    
-
-    # Loading model:
-
-    # model = SAC.load("logs/philip4_pick_and_place_300000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_pick_and_place_replay_buffer_300000_steps")
-    # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"sac_dual_philip4_pickandplace_insert_date_here"
-    # new_logger = configure_logger(tensorboard_log=tmp_path, reset_num_timesteps=False)
-    # model.set_logger(new_logger)
-
 
     # Loading model:
 
