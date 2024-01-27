@@ -3,6 +3,7 @@ from stable_baselines3 import SAC, HerReplayBuffer
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.utils import configure_logger
 from datetime import datetime
 import gymnasium as gym
 from stable_baselines3.common.torch_layers import CombinedExtractor
@@ -17,7 +18,7 @@ if __name__=="__main__":
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
     print(f'Action space: {env.action_space}')
     
-    # Save a checkpoint every 10000 steps
+    # Save a checkpoint every 50000 steps
     checkpoint_callback = CheckpointCallback(
     save_freq=max(50000 // num_cpu, 1),
     save_path="./logs/",
@@ -26,6 +27,7 @@ if __name__=="__main__":
     save_vecnormalize=True,
     )
     
+    # Training from scratch:
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, learning_rate=1e-4, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
                 buffer_size=20000, replay_buffer_class=HerReplayBuffer, device="cuda:0",
@@ -38,17 +40,19 @@ if __name__=="__main__":
                     net_arch=[512, 512, 512], 
                     n_critics=2)
                 )
-    
-    # model = SAC.load("logs/philip4_pick_and_place_300000_steps", env = env) #760000+300000 steps
-    # model.load_replay_buffer("logs/philip4_pick_and_place_replay_buffer_300000_steps")
-    # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    
-    # print(model.policy)
-    
     tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_philip4_pickandplace_%H_%M_%d')
-    # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
+
+
+    # Loading model:
+
+    # model = SAC.load("logs/philip4_pick_and_place_350000_steps", env = env)
+    # model.load_replay_buffer("logs/philip4_pick_and_place_replay_buffer_350000_steps")
+    # print(f'Replay buffer size is {model.replay_buffer.size()}')
+    # tmp_path = "./tmp/"+"sac_dual_philip4_pickandplace_insert_date_here"
+    # new_logger = configure_logger(tensorboard_log=tmp_path, reset_num_timesteps=False)
+    # model.set_logger(new_logger)
 
     model.learn(total_timesteps=1_500_000, callback=checkpoint_callback, progress_bar=True)
     model.save("sac_her_philip4_pickandplace")
