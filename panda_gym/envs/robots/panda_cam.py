@@ -111,7 +111,8 @@ class PandaCam(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
-        return self.render_from_robot_cam()
+       # return self.render_from_robot_cam()
+        return np.array([])  # change to no active view first
 
     def render_from_robot_cam(
         self,

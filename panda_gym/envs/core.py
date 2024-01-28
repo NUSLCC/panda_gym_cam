@@ -463,26 +463,29 @@ class RobotCamTaskEnv(gym.Env):
             with_depth: bool = False,
             data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
-        robot_rgb, robot_dep = self.robot.get_obs()
+        # robot_rgb, robot_dep = self.robot.get_obs()
         task_rgb, task_dep = self.task.get_obs()
 
-        if normalize_image:
-            robot_rgb = robot_rgb.astype(data_type) / 255.0 # [H, W, C]
-            task_rgb = task_rgb.astype(data_type) / 255.0 # [H, W, C]
-        else:
-            assert with_depth == False, "RGB mode has no depth"
-            robot_rgb = robot_rgb.astype(np.uint8)
-            task_rgb = task_rgb.astype(np.uint8)
+        # if normalize_image:
+        #     robot_rgb = robot_rgb.astype(data_type) / 255.0 # [H, W, C]
+        #     task_rgb = task_rgb.astype(data_type) / 255.0 # [H, W, C]
+        # else:
+        #     assert with_depth == False, "RGB mode has no depth"
+        #     robot_rgb = robot_rgb.astype(np.uint8)
+        #     task_rgb = task_rgb.astype(np.uint8)
         
-        if with_depth:
-            robot_obs = np.concatenate((robot_rgb, robot_dep.astype(data_type)), axis=-1)
-            task_obs = np.concatenate((task_rgb, task_dep.astype(data_type)), axis=-1)
-        else:
-            robot_obs = robot_rgb
-            task_obs = task_rgb
+        # if with_depth:
+        #     robot_obs = np.concatenate((robot_rgb, robot_dep.astype(data_type)), axis=-1)
+        #     task_obs = np.concatenate((task_rgb, task_dep.astype(data_type)), axis=-1)
+        # else:
+        #     robot_obs = robot_rgb
+        #     task_obs = task_rgb
 
-        observation = np.concatenate((robot_obs, task_obs), axis=-1)
-        observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
+        task_obs = task_rgb.astype(np.uint8)
+        observation = np.transpose(task_obs, (2, 0, 1))
+
+        # observation = np.concatenate((robot_obs, task_obs), axis=-1)
+        # observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
 
         current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
         desired_goal_coords = self.task.get_goal().astype(np.float32)
@@ -514,17 +517,6 @@ class RobotCamTaskEnv(gym.Env):
             self.robot.reset()
             self.task.reset()
         observation = self._get_obs()
-
-        # observation_shape = observation["observation"].shape # Try this for dynamic observation space
-        # achieved_goal_shape = observation["achieved_goal"].shape 
-        # desired_goal_shape = observation["desired_goal"].shape 
-        # self.observation_space = spaces.Dict( 
-        #     dict(
-        #         observation=spaces.Box(0, 255, shape=observation_shape, dtype=np.uint8),
-        #         achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=np.float32), 
-        #         desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=np.float32) 
-        #     )
-        # )
 
         info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
                 "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
