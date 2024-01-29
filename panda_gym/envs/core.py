@@ -463,7 +463,7 @@ class RobotCamTaskEnv(gym.Env):
             with_depth: bool = False,
             data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
-        # robot_rgb, robot_dep = self.robot.get_obs()
+        robot_rgb, robot_dep = self.robot.get_obs()
         task_rgb, task_dep = self.task.get_obs()
 
         # if normalize_image:
@@ -481,8 +481,8 @@ class RobotCamTaskEnv(gym.Env):
         #     robot_obs = robot_rgb
         #     task_obs = task_rgb
 
-        task_obs = task_rgb.astype(np.uint8)
-        observation = np.transpose(task_obs, (2, 0, 1))
+        observation = np.concatenate([robot_rgb, task_rgb]).astype(np.uint8) # concat along height dimension
+        observation = np.transpose(observation, (2, 0, 1)) 
 
         # observation = np.concatenate((robot_obs, task_obs), axis=-1)
         # observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
@@ -493,7 +493,9 @@ class RobotCamTaskEnv(gym.Env):
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
         )[:7].astype(np.float32) # remove fingers angles
 
-        achieved_goal = self.task.get_achieved_goal().astype(data_type)
+        object_position, ee_position = self.task.get_achieved_goal()
+        object_position = object_position.astype(data_type)
+        ee_position = ee_position.astype(data_type)
         desired_goal = self.task.get_goal().astype(data_type)
         ee_pos = np.array(self.robot.get_ee_position(), dtype=data_type)
         gripper_angle = np.array([self.robot.get_fingers_width()], dtype=data_type)
@@ -502,7 +504,7 @@ class RobotCamTaskEnv(gym.Env):
 
         return {
             "observation": observation,
-            "achieved_goal": achieved_goal,
+            "achieved_goal": object_position,
             "desired_goal": desired_goal,
             "state": state,
             "object_pos_rotation": object_pos_rotation
@@ -518,9 +520,9 @@ class RobotCamTaskEnv(gym.Env):
             self.task.reset()
         observation = self._get_obs()
 
-        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
-                "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal())}
+        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()),
+                "is_success": self.task.is_success(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()),
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal())}
         return observation, info
 
     def save_state(self) -> int:
@@ -559,12 +561,12 @@ class RobotCamTaskEnv(gym.Env):
         observation = self._get_obs()
         
         # An episode is terminated if the agent has reached the target
-        terminated = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
-        success = bool(self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
-        failure = bool(self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
+        terminated = bool(self.task.is_terminated(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()))
+        success = bool(self.task.is_success(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()))
+        failure = bool(self.task.is_failure(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()))
         truncated = False
         info = {"is_terminated": terminated, "is_success": success, "is_failure": failure}
-        reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal(), info))
+        reward = float(self.task.compute_reward(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_achieved_goal()[1].astype(np.float32), self.task.get_goal().astype(np.float32)))
         return observation, reward, terminated, truncated, info
 
     def close(self) -> None:

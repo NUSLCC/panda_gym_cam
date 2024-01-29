@@ -111,8 +111,7 @@ class PandaCam(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
-       # return self.render_from_robot_cam()
-        return np.array([])  # change to no active view first
+        return self.render_from_robot_cam()
 
     def render_from_robot_cam(
         self,
@@ -145,7 +144,6 @@ class PandaCam(PyBulletRobot):
         depth_img = depth_img[..., np.newaxis]
 
         return rgb_img, depth_img
-
 
     def reset(self) -> None:
         self.set_joint_neutral()
