@@ -520,9 +520,9 @@ class RobotCamTaskEnv(gym.Env):
             self.task.reset()
         observation = self._get_obs()
 
-        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()),
-                "is_success": self.task.is_success(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal())}
+        info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal().astype(np.float32)),
+                "is_success": self.task.is_success(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal().astype(np.float32)),
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal().astype(np.float32))}
         return observation, info
 
     def save_state(self) -> int:
@@ -561,9 +561,9 @@ class RobotCamTaskEnv(gym.Env):
         observation = self._get_obs()
         
         # An episode is terminated if the agent has reached the target
-        terminated = bool(self.task.is_terminated(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()))
-        success = bool(self.task.is_success(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()))
-        failure = bool(self.task.is_failure(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal()))
+        terminated = bool(self.task.is_terminated(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal().astype(np.float32)))
+        success = bool(self.task.is_success(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal().astype(np.float32)))
+        failure = bool(self.task.is_failure(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_goal().astype(np.float32)))
         truncated = False
         info = {"is_terminated": terminated, "is_success": success, "is_failure": failure}
         reward = float(self.task.compute_reward(self.task.get_achieved_goal()[0].astype(np.float32), self.task.get_achieved_goal()[1].astype(np.float32), self.task.get_goal().astype(np.float32)))
