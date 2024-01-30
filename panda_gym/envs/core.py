@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
+from collections import deque
+from datetime import datetime
 
 import gymnasium as gym
 import numpy as np
@@ -399,6 +401,8 @@ class RobotCamTaskEnv(gym.Env):
         self.metadata["render_fps"] = 1 / self.sim.dt
         self.robot = robot
         self.task = task
+        self.image_queue_length = 2
+        self.image_deque = deque(maxlen=self.image_queue_length)
         observation, info = self.reset()  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         observation_dtype = observation["observation"].dtype
@@ -434,11 +438,20 @@ class RobotCamTaskEnv(gym.Env):
                 pitch=self.render_pitch,
             )
 
+    def add_image_to_queue(self, image_array):
+        # Assuming image_path is the path to the image file
+        timestamp = datetime.now()
+        self.image_deque.append((timestamp, image_array))
+
+    def get_images_from_queue(self):
+        return np.array([image[1] for image in self.image_deque])
+
     def _get_obs(
             self, 
             normalize_image: bool = False,
             with_depth: bool = False,
             data_type: type = np.float32,
+            is_reset: bool = False,
             ) -> Dict[str, np.ndarray]:
         robot_rgb, robot_dep = self.robot.get_obs()
         task_rgb, task_dep = self.task.get_obs()
@@ -460,7 +473,14 @@ class RobotCamTaskEnv(gym.Env):
 
         observation = np.concatenate((robot_obs, task_obs), axis=-1)
         observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
+        
+        if is_reset:
+            for _ in range(self.image_queue_length):
+                self.add_image_to_queue(observation)
+        else:
+            self.add_image_to_queue(observation)
 
+        observation = self.get_images_from_queue() # [C, H, W]
         achieved_joint_angles = self.robot.get_arm_joint_angles().astype(data_type)
         desired_goal_coords = self.task.get_goal().astype(data_type)
         desired_joint_angles = self.robot.inverse_kinematics(
@@ -478,7 +498,7 @@ class RobotCamTaskEnv(gym.Env):
         with self.sim.no_rendering():
             self.robot.reset()
             self.task.reset()
-        observation = self._get_obs()
+        observation = self._get_obs(is_reset=True)
         goal_data_type = observation["achieved_goal"].dtype
 
         info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(goal_data_type), 
@@ -521,7 +541,7 @@ class RobotCamTaskEnv(gym.Env):
         self.robot.set_action(action)
         self.task.set_target_position()
         self.sim.step()
-        observation = self._get_obs()
+        observation = self._get_obs(is_reset=False)
 
         # An episode is terminated if the agent has reached the target
         terminated  = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal()))
