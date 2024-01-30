@@ -28,7 +28,7 @@ if __name__=="__main__":
                 )
 
     # print(model.policy)
-    tmp_path = "./tmp/"+datetime.now().strftime('sac_dual_cnn_moving_new_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('sac_rgb_moving_lstm_%H_%M_%d')
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
@@ -36,4 +36,4 @@ if __name__=="__main__":
     torch.autograd.set_detect_anomaly(True)
     model.learn(total_timesteps=700_000, progress_bar=True)
     torch.autograd.set_detect_anomaly(False)
-    model.save("sac_her_dual_cnn_moving_new")
+    model.save("sac_rgb_moving_lstm")
