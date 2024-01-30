@@ -199,14 +199,15 @@ def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: The distance between the arrays.
     """
-    # assert a.shape == b.shape
-    # return np.linalg.norm(a - b, axis=-1)
+    assert a.shape == b.shape
+    return np.linalg.norm(a - b, axis=-1)
 
-    try:
-        distance = np.linalg.norm(a - b, axis=-1)
-    except:
-        distance = 0.8  # Set distance to an arbitrary value
-    return distance
+    # try:
+    #     distance = np.linalg.norm(a - b, axis=-1)
+    # except:
+    #  #   print(f'Error')
+    #     distance = 0.8  # Set distance to an arbitrary value
+    # return distance
 
 
 
