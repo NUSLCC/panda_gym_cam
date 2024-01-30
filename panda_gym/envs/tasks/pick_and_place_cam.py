@@ -19,7 +19,7 @@ class PickAndPlaceCam(Task):
         sim: PyBullet,
         get_ee_position,
         reward_type: str = "dense",
-        distance_threshold: float = 0.1, # originally 0.05
+        distance_threshold: float = 0.05,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
@@ -126,7 +126,7 @@ class PickAndPlaceCam(Task):
     def get_achieved_goal(self) -> np.ndarray:
         object_position = np.array(self.sim.get_base_position("object"))
         ee_position = np.array(self.get_ee_position())
-        return object_position, ee_position
+        return object_position
 
     def get_obj_pos_rotation(self) -> np.ndarray:
         # position, rotation of the object
@@ -179,17 +179,18 @@ class PickAndPlaceCam(Task):
        # d = distance(achieved_goal, desired_goal)
         return np.array(ee_distance > self.far_distance_threshold, dtype=bool)
     
-    def compute_reward(self, object_position, ee_position, desired_goal) -> np.ndarray:
-     #   d = distance(achieved_goal, desired_goal)
-        # if self.reward_type == "sparse":
-        #     return -np.array(d > self.distance_threshold, dtype=np.float32)
-        # else:
-        #     return -d.astype(np.float32)
-        print(f'Object position: {object_position}, {object_position.shape}')
-        print(f'ee pos: {ee_position}, {ee_position.shape}')
-        print(f'Desired goal: {desired_goal}')
+    def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        d = distance(achieved_goal, desired_goal)
+        if self.reward_type == "sparse":
+            return -np.array(d > self.distance_threshold, dtype=np.float32)
+        else:
+            return -d.astype(np.float32)
+        
+        # print(f'Object position: {object_position}, {object_position.shape}')
+        # print(f'ee pos: {ee_position}, {ee_position.shape}')
+        # print(f'Desired goal: {desired_goal}')
         cube_distance = distance(object_position, desired_goal)
         ee_distance = distance(ee_position, object_position)
-    #    print(f'Desired goal shape: {desired_goal.shape}')
+        # print(f'Desired goal shape: {desired_goal.shape}')
         return -(cube_distance+ee_distance).astype(np.float32)
 
