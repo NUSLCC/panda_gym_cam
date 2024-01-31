@@ -185,12 +185,5 @@ class PickAndPlaceCam(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             return -d.astype(np.float32)
-        
-        # print(f'Object position: {object_position}, {object_position.shape}')
-        # print(f'ee pos: {ee_position}, {ee_position.shape}')
-        # print(f'Desired goal: {desired_goal}')
-        cube_distance = distance(object_position, desired_goal)
-        ee_distance = distance(ee_position, object_position)
-        # print(f'Desired goal shape: {desired_goal.shape}')
-        return -(cube_distance+ee_distance).astype(np.float32)
+    
 
