@@ -527,7 +527,8 @@ class RobotCamTaskEnv(gym.Env):
 
         info = {"is_terminated": self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)),
                 "is_success": self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)),
-                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32))}
+                "is_failure": self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)),
+                "ee_position": self.robot.get_ee_position().astype(np.float32)}
         return observation, info
 
     def save_state(self) -> int:
