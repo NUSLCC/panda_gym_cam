@@ -1,5 +1,4 @@
 from typing import Optional
-import math
 
 import pybullet as p
 import numpy as np
@@ -8,7 +7,6 @@ from gymnasium import spaces
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
-from panda_gym.utils import color_threshold_pixel_counter
 
 class PandaCam(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
@@ -31,7 +29,7 @@ class PandaCam(PyBulletRobot):
         base_position = base_position if base_position is not None else np.zeros(3)
         self.block_gripper = block_gripper
         self.control_type = control_type
-        n_action = 3 if self.control_type == "ee" else 7  # control (x, y z) if "ee", else, control the 7 joints
+        n_action = 3 if self.control_type == "ee" else 7
         n_action += 0 if self.block_gripper else 1
         action_space = spaces.Box(-1.0, 1.0, shape=(n_action,), dtype=np.float16)
         super().__init__(
@@ -146,7 +144,6 @@ class PandaCam(PyBulletRobot):
 
         return rgb_img, depth_img
     
-
     def reset(self) -> None:
         self.set_joint_neutral()
         
@@ -176,10 +173,3 @@ class PandaCam(PyBulletRobot):
         """Returns array of current arm joint angles"""
         current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(7)])
         return current_arm_joint_angles
-    
-    def object_in_cam(self) -> np.ndarray:
-        """Returns whether the target object is within the fov of the panda camera. This is true if there is one or more green pixel."""
-        pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam()[0].astype(np.uint8))
-       # print(f'Green pixel count: \n {pixel_count}')
-        return np.array(pixel_count > 0, dtype=bool)
-

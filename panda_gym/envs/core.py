@@ -467,10 +467,16 @@ class RobotCamTaskEnv(gym.Env):
         desired_joint_angles = self.robot.inverse_kinematics(
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(data_type) # remove fingers angles
 
+        # return {
+        #     "observation": observation,
+        #     "achieved_goal": current_joint_angles,
+        #     "desired_goal": desired_joint_angles
+        # }
+        achieved_goal = self.task.get_achieved_goal().astype(data_type)
         return {
             "observation": observation,
-            "achieved_goal": current_joint_angles,
-            "desired_goal": desired_joint_angles
+            "achieved_goal": achieved_goal,
+            "desired_goal": self.task.get_goal().astype(data_type),
         }
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:

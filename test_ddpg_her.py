@@ -1,5 +1,4 @@
 from panda_gym.envs import PandaReachCamEnv
-from panda_gym.envs import PandaPickandPlaceCamEnv
 from stable_baselines3 import DDPG, HerReplayBuffer
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.env_util import make_vec_env

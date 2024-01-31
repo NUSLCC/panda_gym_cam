@@ -152,16 +152,13 @@ class NatureCNN(BaseFeaturesExtractor):
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
             nn.Flatten(),
-        )#.to(torch.float32)
+        )
 
         # Compute flatten shape by doing one forward pass
         with torch.no_grad():
-            # sample_array = observation_space.sample()[None]
-            # sample_tensor = torch.tensor(sample_array, dtype=torch.float32)
-            # n_flatten = self.cnn(sample_tensor).shape[1]
             n_flatten = self.cnn(torch.as_tensor(observation_space.sample()[None]).float()).shape[1]
             
-        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())#.to(torch.float32)
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.linear(self.cnn(observations))

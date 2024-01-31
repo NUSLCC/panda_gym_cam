@@ -17,14 +17,13 @@ class ReachCam(Task):
         reward_type="dense",
         distance_threshold=0.05,
         image_overlap_threshold=0.80,
-        goal_range=0.3,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
         self.image_overlap_threshold = image_overlap_threshold
         self.distance_threshold=distance_threshold
-        self.far_distance_threshold = 1.0
         self.object_size = 0.04
+        self.far_distance_threshold = 1.0
         self.object_velocity_max = [0.15, 0.15, 0] # (x,y,z) velocity 
         self.get_ee_position = get_ee_position
         self.goal_range_low = None
@@ -72,11 +71,10 @@ class ReachCam(Task):
             basePosition=[0.65, 0, 0.5-0.3],
             useFixedBase=True,
         )
-        self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
 
     def get_obs(self) -> np.ndarray:
-        rgb_img = self.render_from_stationary_cam() 
-        return rgb_img
+        static_img = self.render_from_stationary_cam() 
+        return static_img
 
     def render_from_stationary_cam(
         self,
