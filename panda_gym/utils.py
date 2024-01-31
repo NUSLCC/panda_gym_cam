@@ -138,6 +138,27 @@ class NatureCNN(BaseFeaturesExtractor):
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.linear(self.cnn(observations))
+    
+class FullyConnectedLayers(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 64,
+    ) -> None:
+
+        super().__init__(observation_space, features_dim)
+
+        n_flatten = get_flattened_obs_dim(observation_space) # or n_flatten = observation_space.size(1)
+    #    print(n_flatten)
+        self.layers = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(n_flatten, 256),
+            nn.ReLU(),
+            nn.Linear(256, features_dim)
+        ).to(torch.float32)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        return self.layers(observations)
 
 class CustomCombinedExtractor(BaseFeaturesExtractor):
     """
@@ -159,6 +180,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         self,
         observation_space: spaces.Dict,
         cnn_output_dim: int = 512,
+        features_dim: int = 100,
         normalized_image: bool = False,
     ) -> None:
         # TODO we do not know features-dim here before going over all the items, so put something there. This is dirty!
@@ -168,13 +190,12 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
 
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
-            if key == "observation":
+            if key == "observation" or key == "observation_2":
                 extractors[key] = NatureCNN(subspace, features_dim=cnn_output_dim, normalized_image=normalized_image)
                 total_concat_size += cnn_output_dim
             else:
-                # The observation key is a vector, flatten it if needed
-                extractors[key] = nn.Flatten()
-                total_concat_size += get_flattened_obs_dim(subspace)
+                extractors[key] = FullyConnectedLayers(subspace, features_dim=features_dim)
+                total_concat_size += features_dim
 
         self.extractors = nn.ModuleDict(extractors)
 
