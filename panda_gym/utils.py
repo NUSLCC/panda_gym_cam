@@ -8,14 +8,12 @@ import matplotlib.pyplot as plt
 import cv2
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space, is_image_space_channels_first
+from stable_baselines3.common.preprocessing import get_flattened_obs_dim
 from stable_baselines3.common.type_aliases import TensorDict
 from typing import Dict
 from gymnasium import spaces
 import gymnasium as gym
-from timm import create_model
 from PIL import Image
 
 
