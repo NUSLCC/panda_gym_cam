@@ -1,11 +1,8 @@
-from typing import Any, Dict, Optional
-from numpy import ndarray
-
-import pybullet as p
 import numpy as np
 import math
-import matplotlib.pyplot as plt
+from typing import Any, Dict, Optional
 
+import pybullet as p
 from panda_gym.envs.core import Task
 from panda_gym.utils import distance
 
@@ -30,12 +27,16 @@ class ReachCam(Task):
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
 
+        self.target_start_x_position = 0.0
         self.target_start_y_position = -0.5
-        self.target_start_position = np.array([0.0, self.target_start_y_position, self.object_size / 2])
-        # self.target_moving_velocity = np.array([0.0, 0.15, 0])
-        self.target_current_step = self.target_start_y_position
-        self.target_step_length = 0.01
+        self.target_start_position = np.array([self.target_start_x_position, self.target_start_y_position, self.object_size / 2])
+        self.target_current_x_position = self.target_start_x_position
+        self.target_current_y_position = self.target_start_y_position
         
+        self.target_current_x_step = 0.0
+        self.target_x_step_length = 2*math.pi/100 # 100 is the max of steps per run
+        self.target_y_step_length = 0.01
+
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -120,24 +121,21 @@ class ReachCam(Task):
         ee_position = np.array(self.get_ee_position())
         return ee_position
     
-    def get_goal(self) -> ndarray:
+    def get_goal(self) -> np.ndarray:
         goal = self.sim.get_base_position("target")
         return goal 
-
-    # def reset(self) -> None:
-    #     self.goal = self._sample_goal()
-    #     self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-    #     self.target_current_step = 0
 
     def reset(self) -> None:
         self.goal = self.get_goal()
         self.sim.set_base_pose("target", self.target_start_position, np.array([0.0, 0.0, 0.0, 1.0]))
-        # self.sim.set_base_velocity("target", self.target_moving_velocity)
-        self.target_current_step = self.target_start_y_position
+        self.target_current_x_position = self.target_start_x_position
+        self.target_current_y_position = self.target_start_y_position
 
     def set_target_position(self) -> None:
-        self.target_current_step += self.target_step_length
-        self.sim.set_base_pose("target", np.array([0.0, self.target_current_step, self.object_size / 2]), np.array([0.0, 0.0, 0.0, 1.0]))
+        self.target_current_x_step += self.target_x_step_length
+        self.target_current_x_position = 0.2 * math.sin(self.target_current_x_step)
+        self.target_current_y_position += self.target_y_step_length
+        self.sim.set_base_pose("target", np.array([self.target_current_x_position, self.target_current_y_position, self.object_size / 2]), np.array([0.0, 0.0, 0.0, 1.0]))
 
     # def _sample_goal(self) -> np.ndarray:
     #     """Randomize goal."""
