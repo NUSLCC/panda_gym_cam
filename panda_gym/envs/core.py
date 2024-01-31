@@ -416,6 +416,8 @@ class RobotCamTaskEnv(gym.Env):
         observation, _ = self.reset()  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         observation_dtype = observation["observation"].dtype
+        observation_2_shape = observation["observation_2"].shape
+        observation_2_dtype = observation["observation_2"].dtype
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
         achieved_goal_dtype = observation["achieved_goal"].dtype
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
@@ -429,6 +431,7 @@ class RobotCamTaskEnv(gym.Env):
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=observation_dtype),
+                observation_2=spaces.Box(0, 255, shape=observation_2_shape, dtype=observation_2_dtype),
                 achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=achieved_goal_dtype), 
                 desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=desired_goal_dtype),
                 state=spaces.Box(-10.0, 10.0, shape=state_shape, dtype=state_dtype), 
@@ -481,8 +484,11 @@ class RobotCamTaskEnv(gym.Env):
         #     robot_obs = robot_rgb
         #     task_obs = task_rgb
 
-        observation = np.concatenate([robot_rgb, task_rgb]).astype(np.uint8) # concat along height dimension
+       # observation = np.concatenate([robot_rgb, task_rgb]).astype(np.uint8) # concat along height dimension
+        observation = robot_rgb.astype(np.uint8)
+        observation_2 = task_rgb.astype(np.uint8)
         observation = np.transpose(observation, (2, 0, 1)) 
+        observation_2 = np.transpose(observation_2, (2, 0, 1)) 
 
         # observation = np.concatenate((robot_obs, task_obs), axis=-1)
         # observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
@@ -502,6 +508,7 @@ class RobotCamTaskEnv(gym.Env):
 
         return {
             "observation": observation,
+            "observation_2": observation_2,
             "achieved_goal": achieved_goal,
             "desired_goal": desired_goal,
             "state": state,
