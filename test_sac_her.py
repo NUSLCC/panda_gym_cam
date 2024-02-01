@@ -34,6 +34,6 @@ if __name__=="__main__":
     model.set_logger(new_logger)
 
     torch.autograd.set_detect_anomaly(True)
-    model.learn(total_timesteps=1_000_000, progress_bar=True)
+    model.learn(total_timesteps=700_000, progress_bar=True)
     torch.autograd.set_detect_anomaly(False)
     model.save("sac_rgb_sine_moving_cnn")
