@@ -210,17 +210,20 @@ class Resnet18LSTM(BaseFeaturesExtractor):
         n_input_channels = observation_space.shape[1] # [T, C, H, W]
         resnet = resnet18(pretrained=False)
         down_blocks = []
+        
         self.input_block = nn.Sequential(
             nn.Conv2d(6, 64, kernel_size=7, stride=1, padding=3),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True)
             
         )
+        self.pooling = list(resnet.children())[3]
         for bottleneck in list(resnet.children()):
             if isinstance(bottleneck, nn.Sequential):
                 down_blocks.append(bottleneck)
         self.down_blocks = nn.Sequential(*down_blocks)
         self.resnet = nn.Sequential(self.input_block,
+                                    self.pooling,
                                     self.down_blocks,
                                     nn.Flatten()
                                     )
@@ -230,7 +233,7 @@ class Resnet18LSTM(BaseFeaturesExtractor):
             n_flatten = self.resnet(torch.as_tensor(each_T).float()).shape[1]
 
         self.fc_lstm = nn.Linear(n_flatten, features_dim)
-        # self.lstm = nn.LSTM(input_size=features_dim, hidden_size=features_dim, num_layers=3)
+        self.lstm = nn.LSTM(input_size=features_dim, hidden_size=features_dim, num_layers=3)
         self.fc1 = nn.Linear(features_dim, features_dim)
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
