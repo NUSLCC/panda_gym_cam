@@ -1,6 +1,4 @@
 from typing import Optional
-import math
-
 import pybullet as p
 import numpy as np
 from gymnasium import spaces
@@ -8,7 +6,6 @@ from gymnasium import spaces
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
 
-from panda_gym.utils import color_threshold_pixel_counter
 
 class PandaCam(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
@@ -26,7 +23,7 @@ class PandaCam(PyBulletRobot):
         sim: PyBullet,
         block_gripper: bool = False,
         base_position: Optional[np.ndarray] = None,
-        control_type: str = "joints",
+        control_type: str = "ee",
     ) -> None:
         base_position = base_position if base_position is not None else np.zeros(3)
         self.block_gripper = block_gripper
@@ -43,7 +40,6 @@ class PandaCam(PyBulletRobot):
             joint_indices=np.array([0, 1, 2, 3, 4, 5, 6, 9, 10]),
             joint_forces=np.array([87.0, 87.0, 87.0, 87.0, 12.0, 120.0, 120.0, 170.0, 170.0]),
         )
-
         self.fingers_indices = np.array([9, 10])
         self.neutral_joint_values = np.array([0.00, 0.41, 0.00, -1.85, 0.00, 2.26, 0.79, 0.00, 0.00])
         self.ee_link = 11
@@ -167,19 +163,8 @@ class PandaCam(PyBulletRobot):
     def get_ee_velocity(self) -> np.ndarray:
         """Returns the velocity of the end-effector as (vx, vy, vz)"""
         return self.get_link_velocity(self.ee_link)
-
-    def get_cam_position(self) -> np.ndarray:
-        """Returns the position of the end-effector as (x, y, z)"""
-        return self.get_link_position(self.cam_link)
     
     def get_arm_joint_angles(self) -> np.ndarray:
         """Returns array of current arm joint angles"""
         current_arm_joint_angles = np.array([self.get_joint_angle(joint=i) for i in range(7)])
         return current_arm_joint_angles
-    
-    def object_in_cam(self) -> np.ndarray:
-        """Returns whether the target object is within the fov of the panda camera. This is true if there is one or more green pixel."""
-        pixel_count = color_threshold_pixel_counter(self.render_from_robot_cam()[0].astype(np.uint8))
-       # print(f'Green pixel count: \n {pixel_count}')
-        return np.array(pixel_count > 0, dtype=bool)
-

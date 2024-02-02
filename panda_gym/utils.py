@@ -14,9 +14,8 @@ from stable_baselines3.common.type_aliases import TensorDict
 from typing import Dict
 from gymnasium import spaces
 import gymnasium as gym
-from timm import create_model
 from PIL import Image
-from torchvision.models import resnet18, resnet101, resnet50, resnet34
+from torchvision.models import resnet18
 
 
 class NatureCNN(BaseFeaturesExtractor):
@@ -105,6 +104,65 @@ class NatureCNNT(BaseFeaturesExtractor):
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         return self.linear(self.cnn(observations[:,-1,])) # use current frame
     
+
+class DualCNN(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "NatureCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[0]
+        each_input_channels = int(n_input_channels/2)
+
+        self.cnn1 = nn.Sequential(
+            nn.Conv2d(each_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        self.cnn2 = nn.Sequential(
+            nn.Conv2d(each_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute flatten shape by doing one forward pass
+        with torch.no_grad():
+            sample_array = observation_space.sample()[None]
+            channel_dim = sample_array.shape[1]
+            each_channel_dim = int(channel_dim/2)
+            sample_tensor1 = torch.tensor(sample_array[:, :each_channel_dim, :, :])
+            sample_tensor2 = torch.tensor(sample_array[:, each_channel_dim:, :, :])
+
+            n_flatten1 = self.cnn1(sample_tensor1).shape[1]
+            n_flatten2 = self.cnn2(sample_tensor2).shape[1]
+        
+        self.linear1 = nn.Sequential(nn.Linear(n_flatten1, int(features_dim/2)), nn.ReLU())
+        self.linear2 = nn.Sequential(nn.Linear(n_flatten2, int(features_dim/2)), nn.ReLU())
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        channel_dim = observations.shape[1]
+        each_channel_dim = int(channel_dim/2)
+        observations1 = observations[:, :each_channel_dim, :, :]
+        observations2 = observations[:, each_channel_dim:, :, :]
+        forward1 = self.linear1(self.cnn1(observations1))
+        forward2 = self.linear2(self.cnn2(observations2))
+        return torch.cat((forward1, forward2), dim=1)
+
 
 class CNNLSTM(BaseFeaturesExtractor):
     def __init__(
@@ -274,7 +332,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = Resnet18LSTM(subspace, features_dim=cnn_output_dim)
+                extractors[key] = NatureCNNT(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed

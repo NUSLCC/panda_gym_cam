@@ -241,7 +241,7 @@ class PandaReachCamEnv(RobotCamTaskEnv):
         self,
         render_mode: str = "rgb_array",
         reward_type: str = "dense",
-        control_type: str = "joints",
+        control_type: str = "ee",
         renderer: str = "Tiny",
         render_width: int = 720,
         render_height: int = 480,

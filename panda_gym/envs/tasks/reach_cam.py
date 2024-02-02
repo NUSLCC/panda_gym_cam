@@ -137,13 +137,6 @@ class ReachCam(Task):
         self.target_current_y_position += self.target_y_step_length
         self.sim.set_base_pose("target", np.array([self.target_current_x_position, self.target_current_y_position, self.object_size / 2]), np.array([0.0, 0.0, 0.0, 1.0]))
 
-    # def _sample_goal(self) -> np.ndarray:
-    #     """Randomize goal."""
-    #     goal = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
-    #     noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
-    #     goal += noise
-    #     return goal
-
     def is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> np.ndarray:
         d = distance(achieved_goal, desired_goal)
         return np.array(d < self.distance_threshold, dtype=bool)
