@@ -14,17 +14,34 @@ class CNNLSTM(nn.Module):
 
         super().__init__()
         # We assume CxHxW images (channels first)
-        self.fc_lstm = nn.Linear(16384, 512)
+        # self.fc_lstm = nn.Linear(16384, 512)
+        self.fc_lstm = nn.Linear(51200, 512) # for deeper cnn
         self.fc1 = nn.Linear(512, 512)
         self.fc2 = nn.Linear(512, 512)
         self.lstm = nn.LSTM(input_size=512, hidden_size=512, num_layers=3)
         n_input_channels = 6 # last channel is feature channel from raw data [B, C H, W]
+        # self.cnn = nn.Sequential(
+        #     nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+        #     nn.ReLU(),
+        #     nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+        #     nn.ReLU(),
+        #     nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+        #     nn.ReLU(),
+        #     nn.Flatten(),
+        # )
+
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.Conv2d(n_input_channels, 32, kernel_size=6, stride=2, padding=2),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten(),
         )
