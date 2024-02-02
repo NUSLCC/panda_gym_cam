@@ -151,6 +151,14 @@ class NatureCNN(BaseFeaturesExtractor):
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0), # Add1
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0), # Add2
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0), # Add3
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0), # Add4
+            nn.ReLU(),
             nn.Flatten(),
         )
 
