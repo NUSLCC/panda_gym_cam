@@ -87,8 +87,164 @@ class CustomConvNextExtractor(BaseFeaturesExtractor):
         for key, extractor in self.extractors.items():
             encoded_tensor_list.append(extractor(observations[key].to(torch.float32)))
         return torch.cat(encoded_tensor_list, dim=1)
+    
 
+class DualCNN(BaseFeaturesExtractor):
+    """
+    Applies two separate CNNs to both image observations
+    """
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 64,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "NatureCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[0]
+        each_input_channels = int(n_input_channels/2)
 
+        self.cnn1 = nn.Sequential(
+            nn.Conv2d(each_input_channels, 64, kernel_size=3, stride=2, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(3, stride = 1, padding = 1),
+        )
+
+        self.cnn2 = nn.Sequential(
+            nn.Conv2d(each_input_channels, 64, kernel_size=3, stride=2, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.MaxPool2d(3, stride = 1, padding = 1),
+        )
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        channel_dim = observations.shape[1]
+        each_channel_dim = int(channel_dim/2)
+        observations1 = observations[:, :each_channel_dim, :, :]
+        observations2 = observations[:, each_channel_dim:, :, :]
+        forward1 = self.cnn1(observations1)
+        forward2 = self.cnn2(observations2)
+        # print('forward1 shape', forward1.shape)
+        # print('forward2 shape', forward2.shape)
+        x = torch.add(forward1, forward2) # perform element wise addition here 
+     #   print('img_output shape', x.shape)
+        return x
+    
+class StateInfoFullyConnectedLayers(BaseFeaturesExtractor):
+    """
+    Fully Connected Network for the state info (ee position and gripper angle)"""
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 64,
+    ) -> None:
+
+        super().__init__(observation_space, features_dim)
+
+        n_flatten = get_flattened_obs_dim(observation_space) # or n_flatten = observation_space.size(1)
+    #    print(n_flatten)
+        self.fc1 = nn.Linear(n_flatten, 256)
+        self.fc2 = nn.Linear(1, 64)
+        self.relu = nn.ReLU()
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        x = self.relu(self.fc1(observations))
+        x = torch.sum(x, dim=1, keepdim=True) # sum along feature dim axis
+        x = self.relu(self.fc2(x))
+        x = x.view(-1, 64, 1, 1) # reshape to (batch size, 64, 1, 1)
+      #  print("state_shape", x.shape)
+        return x
+    
+class FinalEncoder(nn.Module):
+    """
+    This is the final encoder, after: two separate CNNs applied to both image observations, and a FC network to state info, and they are merged via broadcasted element-wise addition.
+	"""
+    def __init__(self):
+        super().__init__()
+        self.final_cnn = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(8832, 512), # 8832 is the output from flattening
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+        )
+    def forward(self, x):
+        x = self.final_cnn(x)
+        return x
+    
+class DeepConvNetCombinedExtractor(BaseFeaturesExtractor):
+    """
+    Applies two separate CNNs to both image observations, and a FC network to state info. Then, they are merged via broadcasted element-wise addition,
+    and undergo another convolutional network. 
+    """
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        features_dim: int = 256,
+    ) -> None:
+        super().__init__(observation_space, features_dim)
+
+        self.img_cnn = DualCNN(observation_space.spaces["observation"])
+        self.state = StateInfoFullyConnectedLayers(observation_space.spaces["state"])
+        self.final_encoder = FinalEncoder()
+
+        total_concat_size = features_dim
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> torch.Tensor:
+
+        img_output = self.img_cnn(observations["observation"])
+        state_output = self.state(observations["state"])
+        # print("img_output", img_output.shape)
+        # print("state_output", state_output.shape)
+        combined_output = torch.add(img_output, state_output) # element wise addition
+        # print("combined_output", combined_output.shape)
+        final_output = self.final_encoder(combined_output)
+
+        return final_output
+    
 class NatureCNN(BaseFeaturesExtractor):
     """
     CNN from DQN Nature paper:
