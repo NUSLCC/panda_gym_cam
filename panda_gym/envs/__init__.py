@@ -8,4 +8,5 @@ from panda_gym.envs.panda_tasks import (
     PandaReachCamObstacleEnv,
     PandaSlideEnv,
     PandaStackEnv,
+    PandaLiftCamEnv,
 )
