@@ -12,7 +12,7 @@ if __name__=="__main__":
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
 
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, learning_rate=1e-4, verbose=1, 
-                train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
+                train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=2500,
                 buffer_size=50000, replay_buffer_class=HerReplayBuffer, device="cuda:0",
                 # Parameters for HER
                 replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
@@ -30,5 +30,5 @@ if __name__=="__main__":
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
 
-    model.learn(total_timesteps=700_000, progress_bar=True)
+    model.learn(total_timesteps=1200_000, progress_bar=True)
     model.save("sac_rgb_sine_moving_cnnlstm6l_ee")
