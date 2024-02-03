@@ -180,14 +180,17 @@ class PickAndPlaceCam(Task):
         return np.array(ee_distance > self.far_distance_threshold, dtype=bool)
     
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
-        # ee_position = np.array(self.get_ee_position()).astype(np.float32)
-        # ee_distance = distance(achieved_goal, ee_position)
+        d = distance(achieved_goal, desired_goal).astype(np.float32)
+        ee_position = np.array(self.get_ee_position()).astype(np.float32)
+        ee_distance = distance(achieved_goal, ee_position).astype(np.float32)
         # print("ee_pos", ee_position, ee_position.shape)
         # print("achieved_goal", achieved_goal, achieved_goal.shape)
         if self.reward_type == "sparse":
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
-            return -d.astype(np.float32)
+            reward = -2*ee_distance # move towards object
+            if ee_distance < 0.1:
+                reward += 15-40*d # pick up and place object
+            return reward.astype(np.float32)
     
 
