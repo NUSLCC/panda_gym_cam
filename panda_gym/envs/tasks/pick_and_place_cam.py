@@ -184,12 +184,13 @@ class PickAndPlaceCam(Task):
         ee_position = np.array(self.get_ee_position()).astype(np.float32)
         ee_distance = distance(achieved_goal, ee_position).astype(np.float32)
         # print("ee_pos", ee_position, ee_position.shape)
-        # print("achieved_goal", achieved_goal, achieved_goal.shape)
+       # print("achieved_goal", achieved_goal, achieved_goal.shape)
         if self.reward_type == "sparse":
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             reward = -2*ee_distance # move towards object
-            if ee_distance < 0.1:
+        #    if ee_distance < 0.1:
+            if achieved_goal[2] > 0.03: # center of mass of object is off the table
                 reward += 15-40*d # pick up and place object
             return reward.astype(np.float32)
     
