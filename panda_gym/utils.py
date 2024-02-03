@@ -313,6 +313,48 @@ class CNNLSTM6Layers(BaseFeaturesExtractor):
         return x
 
 
+class DeformCNNLSTM(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "DeformCNNLSTM must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[1] # [T, C, H, W]
+        self.deform_cnn = nn.Sequential(
+            DeformableConv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            DeformableConv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            DeformableConv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+        with torch.no_grad():
+            each_T = observation_space.sample()[None][:,0,]
+            n_flatten = self.deform_cnn(torch.as_tensor(each_T).float()).shape[1]
+
+        self.fc_lstm = nn.Linear(n_flatten, features_dim)
+        self.lstm = nn.LSTM(input_size=features_dim, hidden_size=features_dim, num_layers=3)
+        self.fc1 = nn.Linear(features_dim, features_dim)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        hidden = None
+        for t in range(observations.size(1)):
+            x = self.deform_cnn(observations[:, t, :, :, :]) 
+            x = self.fc_lstm(x)
+            out, hidden = self.lstm(x.unsqueeze(0), hidden)         
+
+        x = self.fc1(out[-1, :, :])
+        x = F.relu(x)
+        return x
+
+
 class Resnet18LSTM(BaseFeaturesExtractor):
     def __init__(
         self,
@@ -391,7 +433,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = CNNLSTM6Layers(subspace, features_dim=cnn_output_dim)
+                extractors[key] = DeformCNNLSTM(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
