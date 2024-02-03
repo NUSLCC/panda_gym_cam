@@ -265,7 +265,7 @@ class CNNLSTM(BaseFeaturesExtractor):
         return x
 
 
-class CNNLSTM_6layers(BaseFeaturesExtractor):
+class CNNLSTM6Layers(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: gym.Space,
@@ -279,17 +279,17 @@ class CNNLSTM_6layers(BaseFeaturesExtractor):
         # We assume CxHxW images (channels first)
         n_input_channels = observation_space.shape[1] # [T, C, H, W]
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 32, kernel_size=6, stride=2, padding=2),
+            nn.Conv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
             nn.Flatten(),
         )
@@ -391,7 +391,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = DeformableCNNT(subspace, features_dim=cnn_output_dim)
+                extractors[key] = CNNLSTM6Layers(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
@@ -409,7 +409,8 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         for key, extractor in self.extractors.items():
             encoded_tensor_list.append(extractor(observations[key]))
         return torch.cat(encoded_tensor_list, dim=1)
-    
+
+
 def distance(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Compute the distance between two array. This function is vectorized.
 
