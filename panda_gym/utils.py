@@ -171,13 +171,14 @@ class StateInfoFullyConnectedLayers(BaseFeaturesExtractor):
 
         n_flatten = get_flattened_obs_dim(observation_space) # or n_flatten = observation_space.size(1)
     #    print(n_flatten)
-        self.fc1 = nn.Linear(n_flatten, 256)
-        self.fc2 = nn.Linear(1, 64)
+        self.fc1 = nn.Linear(n_flatten, 512)
+        self.fc2 = nn.Linear(512, 64)
+      #  self.fc2 = nn.Linear(1, 64)
         self.relu = nn.ReLU()
 
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.fc1(observations))
-        x = torch.sum(x, dim=1, keepdim=True) # sum along feature dim axis
+      #  x = torch.sum(x, dim=1, keepdim=True) # sum along feature dim axis
         x = self.relu(self.fc2(x))
         x = x.view(-1, 64, 1, 1) # reshape to (batch size, 64, 1, 1)
       #  print("state_shape", x.shape)
@@ -198,10 +199,10 @@ class FinalEncoder(nn.Module):
             nn.ReLU(),
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
+            # nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(),
             nn.Flatten(),
             nn.Linear(8832, 512), # 8832 is the output from flattening
             nn.ReLU(),
