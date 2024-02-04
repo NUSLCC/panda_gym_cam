@@ -8,6 +8,8 @@ import cv2
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.ops
+from torchvision import transforms
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim, is_image_space, is_image_space_channels_first
 from stable_baselines3.common.type_aliases import TensorDict
@@ -16,7 +18,107 @@ from gymnasium import spaces
 import gymnasium as gym
 from timm import create_model
 from PIL import Image
-from torchvision.models import resnet18, resnet101, resnet50, resnet34
+from torchvision.models import resnet18
+
+
+class DeformableConv2d(nn.Module):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=3,
+                 stride=1,
+                 padding=1,
+                 dilation=1,
+                 bias=False):
+        super(DeformableConv2d, self).__init__()
+
+        assert type(kernel_size) == tuple or type(kernel_size) == int
+
+        kernel_size = kernel_size if type(kernel_size) == tuple else (kernel_size, kernel_size)
+        self.stride = stride if type(stride) == tuple else (stride, stride)
+        self.padding = padding
+        self.dilation = dilation
+
+        self.offset_conv = nn.Conv2d(in_channels,
+                                     2 * kernel_size[0] * kernel_size[1],
+                                     kernel_size=kernel_size,
+                                     stride=stride,
+                                     padding=self.padding,
+                                     dilation=self.dilation,
+                                     bias=True)
+
+        nn.init.constant_(self.offset_conv.weight, 0.)
+        nn.init.constant_(self.offset_conv.bias, 0.)
+
+        self.modulator_conv = nn.Conv2d(in_channels,
+                                        1 * kernel_size[0] * kernel_size[1],
+                                        kernel_size=kernel_size,
+                                        stride=stride,
+                                        padding=self.padding,
+                                        dilation=self.dilation,
+                                        bias=True)
+
+        nn.init.constant_(self.modulator_conv.weight, 0.)
+        nn.init.constant_(self.modulator_conv.bias, 0.)
+
+        self.regular_conv = nn.Conv2d(in_channels=in_channels,
+                                      out_channels=out_channels,
+                                      kernel_size=kernel_size,
+                                      stride=stride,
+                                      padding=self.padding,
+                                      dilation=self.dilation,
+                                      bias=bias)
+
+    def forward(self, x):
+        # h, w = x.shape[2:]
+        # max_offset = max(h, w)/4.
+
+        offset = self.offset_conv(x)  # .clamp(-max_offset, max_offset)
+        modulator = 2. * torch.sigmoid(self.modulator_conv(x))
+        # op = (n - (k * d - 1) + 2p / s)
+        x = torchvision.ops.deform_conv2d(input=x,
+                                          offset=offset,
+                                          weight=self.regular_conv.weight,
+                                          bias=self.regular_conv.bias,
+                                          padding=self.padding,
+                                          mask=modulator,
+                                          stride=self.stride,
+                                          dilation=self.dilation)
+        return x
+
+
+class DeformableCNNT(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "DeformCNN must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[1] # [T, C, H, W]
+        self.deform_cnn = nn.Sequential(
+            DeformableConv2d(n_input_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            DeformableConv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            DeformableConv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute flatten shape by doing one forward pass
+        with torch.no_grad():
+            each_T = observation_space.sample()[None][:,-1,]
+            n_flatten = self.deform_cnn(torch.as_tensor(each_T).float()).shape[1]
+        
+        self.linear = nn.Sequential(nn.Linear(n_flatten, features_dim), nn.ReLU())
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        return self.linear(self.deform_cnn(observations[:,-1,])) # use current frame
 
 
 class NatureCNN(BaseFeaturesExtractor):
@@ -277,7 +379,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = Resnet18LSTM(subspace, features_dim=cnn_output_dim)
+                extractors[key] = DeformableCNNT(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             else:
                 # The observation key is a vector, flatten it if needed
