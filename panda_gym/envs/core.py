@@ -487,7 +487,7 @@ class RobotCamTaskEnv(gym.Env):
         desired_goal = self.task.get_goal().astype(np.float32)
         ee_pos = np.array(self.robot.get_ee_position(), dtype=data_type)
         gripper_angle = np.array([self.robot.get_fingers_width()], dtype=data_type)
-        state = np.concatenate([ee_pos, gripper_angle], axis=0)
+        state = np.concatenate([achieved_goal, desired_goal, ee_pos, gripper_angle], axis=0)
 
         return {
             "observation": observation,
