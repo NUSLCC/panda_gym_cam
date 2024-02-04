@@ -8,7 +8,7 @@ from stable_baselines3.common.utils import configure_logger
 from datetime import datetime
 import gymnasium as gym
 from stable_baselines3.common.torch_layers import CombinedExtractor
-from panda_gym.utils import CustomCombinedExtractor, CustomConvNextExtractor
+from panda_gym.utils import CustomCombinedExtractor, CustomConvNextExtractor, DeepConvNetCombinedExtractor
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 
@@ -29,14 +29,18 @@ if __name__=="__main__":
     )
     
     # Training from scratch:
-    model = TQC(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, learning_rate=1e-4, verbose=1, 
+    model = TQC(policy="MultiInputPolicy",env=env, batch_size=1024, gamma=0.95, learning_rate=1e-4, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
                 buffer_size=20000, replay_buffer_class=None, device="cuda:0",
                 # Parameters for HER
               #  replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for TQC
                 top_quantiles_to_drop_per_net=2, 
-                policy_kwargs=dict(net_arch=[512, 512, 512], n_critics=2, n_quantiles=25)
+                policy_kwargs=dict(
+                    features_extractor_class=DeepConvNetCombinedExtractor,
+                    net_arch=[512, 512, 512], 
+                    n_critics=2, 
+                    n_quantiles=25)
                 )
     
     tmp_path = "./tmp/"+datetime.now().strftime('tqc_dual_philip4_pickandplace_%H_%M_%d')
