@@ -28,10 +28,10 @@ class PickAndPlaceCam(Task):
         self.far_distance_threshold = 0.8 
         self.object_size = 0.04
         self.get_ee_position = get_ee_position
-        self.goal_range_low = None
-        self.goal_range_high = None
-        self.obj_range_low = None
-        self.obj_range_high = None
+        self.goal_range_low = [0.15, -0.15, 0]
+        self.goal_range_high = [0.2, 0.15, 0]
+        self.obj_range_low = [0, -0.15, 0]
+        self.obj_range_high = [0.1, 0.15, 0]
         self.cam_width: int = 160
         self.cam_height: int = 90
         self.cam_link = 13
@@ -139,9 +139,9 @@ class PickAndPlaceCam(Task):
     def reset(self) -> None:
         # self.obj_range_low, self.obj_range_high = generate_semicircle_object_range()
         # self.goal_range_low, self.goal_range_high = generate_semicircle_object_range() # both object and goal must be within reach of Panda arm
-        self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
-        self.goal_range_low, self.goal_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
-        self.obj_range_low, self.obj_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
+        # self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
+        # self.goal_range_low, self.goal_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
+        # self.obj_range_low, self.obj_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
         self.goal = self._sample_goal()
         object_position = self._sample_object()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
@@ -157,7 +157,7 @@ class PickAndPlaceCam(Task):
     def _sample_object(self) -> np.ndarray:
         """Randomize start position of object."""
         object_position = np.array([0.0, 0.0, self.object_size / 2])  # z offset for the sphere center
-        noise = np.random.uniform(self.goal_range_low, self.goal_range_high)
+        noise = np.random.uniform(self.obj_range_low, self.obj_range_high)
         object_position += noise
         return object_position
 
