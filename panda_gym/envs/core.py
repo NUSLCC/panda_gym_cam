@@ -416,26 +416,20 @@ class RobotCamTaskEnv(gym.Env):
         observation, _ = self.reset()  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         observation_dtype = observation["observation"].dtype
-        observation_2_shape = observation["observation_2"].shape
-        observation_2_dtype = observation["observation_2"].dtype
-        achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
+        achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current ee position
         achieved_goal_dtype = observation["achieved_goal"].dtype
-        desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
+        desired_goal_shape = observation["desired_goal"].shape # Desired goal is the cartesian coords of target position
         desired_goal_dtype = observation["desired_goal"].dtype
         state_shape = observation["state"].shape
         state_dtype = observation["state"].dtype
-        object_pos_rotation_shape = observation["object_pos_rotation"].shape
-        object_pos_rotation_dtype = observation["object_pos_rotation"].dtype
 
 
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0, 255, shape=observation_shape, dtype=observation_dtype),
-                observation_2=spaces.Box(0, 255, shape=observation_2_shape, dtype=observation_2_dtype),
                 achieved_goal=spaces.Box(-10.0, 10.0, shape=achieved_goal_shape, dtype=achieved_goal_dtype), 
                 desired_goal=spaces.Box(-10.0, 10.0, shape=desired_goal_shape, dtype=desired_goal_dtype),
                 state=spaces.Box(-10.0, 10.0, shape=state_shape, dtype=state_dtype), 
-                object_pos_rotation=spaces.Box(-10.0, 10.0, shape=object_pos_rotation_shape, dtype=object_pos_rotation_dtype),
             )
         )
         self.action_space = self.robot.action_space
@@ -485,34 +479,22 @@ class RobotCamTaskEnv(gym.Env):
         #     task_obs = task_rgb
 
        # observation = np.concatenate([robot_rgb, task_rgb]).astype(np.uint8) # concat along height dimension
-        observation = robot_rgb.astype(np.uint8)
-        observation_2 = task_rgb.astype(np.uint8)
+        robot_rgb = robot_rgb.astype(np.uint8)
+        task_rgb = task_rgb.astype(np.uint8)
+        observation = np.concatenate((robot_rgb, task_rgb), axis=0) # concat along height dim
         observation = np.transpose(observation, (2, 0, 1)) 
-        observation_2 = np.transpose(observation_2, (2, 0, 1)) 
 
-        # observation = np.concatenate((robot_obs, task_obs), axis=-1)
-        # observation = np.transpose(observation, (2, 0, 1)) # [C, H, W]
-
-        current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
-        desired_goal_coords = self.task.get_goal().astype(np.float32)
-        joint_angles_required = self.robot.inverse_kinematics(
-            link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
-        )[:7].astype(np.float32) # remove fingers angles
-
-        achieved_goal = self.task.get_achieved_goal().astype(data_type)
-        desired_goal = self.task.get_goal().astype(data_type)
+        achieved_goal = self.task.get_achieved_goal().astype(np.float32)
+        desired_goal = self.task.get_goal().astype(np.float32)
         ee_pos = np.array(self.robot.get_ee_position(), dtype=data_type)
         gripper_angle = np.array([self.robot.get_fingers_width()], dtype=data_type)
-        state = np.concatenate([ee_pos, gripper_angle], axis=0)
-        object_pos_rotation = self.task.get_obj_pos_rotation().astype(data_type)
+        state = np.concatenate([achieved_goal, desired_goal, ee_pos, gripper_angle], axis=0)
 
         return {
             "observation": observation,
-            "observation_2": observation_2,
             "achieved_goal": achieved_goal,
             "desired_goal": desired_goal,
             "state": state,
-            "object_pos_rotation": object_pos_rotation
         }
 
     def reset(
