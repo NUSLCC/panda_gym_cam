@@ -35,7 +35,7 @@ if __name__=="__main__":
               #  replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for SAC
                 policy_kwargs=dict(
-                    features_extractor_class=CustomCombinedExtractor,
+                    features_extractor_class=CombinedExtractor,
                     features_extractor_kwargs=dict(cnn_output_dim = 512),
                     net_arch=[512, 512, 512], 
                     n_critics=2)
