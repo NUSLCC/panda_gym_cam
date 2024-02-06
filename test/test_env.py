@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import sys
 import gymnasium as gym
 sys.path.append("/home/lcc/GitRepo/panda-gym")
+sys.path.append("/home/fyp/lcc_ws/panda_gym_cam")
 sys.path.append("/Users/chenchen/GitRepo/panda_gym_cam")
 from panda_gym.envs import PandaReachCamEnv
 from panda_gym.envs import PandaReachEnv

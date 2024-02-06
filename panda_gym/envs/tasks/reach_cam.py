@@ -34,7 +34,7 @@ class ReachCam(Task):
         self.target_current_y_position = self.target_start_y_position
         
         self.target_current_x_step = 0.0
-        self.target_x_step_length = 2*math.pi/100 # 100 is the max of steps per run
+        self.target_x_step_length = 2*math.pi/50 # 100 is the max of steps per run
         self.target_y_step_length = 0.01
 
         with self.sim.no_rendering():
