@@ -410,11 +410,14 @@ class RobotCamTaskEnv(gym.Env):
         achieved_goal_dtype = observation["achieved_goal"].dtype
         desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
         desired_goal_dtype = observation["desired_goal"].dtype
+        kinematics_shape = observation["kinematics"].shape
+        kinematics_dtype = observation["kinematics"].dtype
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(0.0, 255.0, shape=observation_shape, dtype=observation_dtype),
                 achieved_goal=spaces.Box(-5.0, 5.0, shape=achieved_goal_shape, dtype=achieved_goal_dtype), 
-                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=desired_goal_dtype) 
+                desired_goal=spaces.Box(-5.0, 5.0, shape=desired_goal_shape, dtype=desired_goal_dtype),
+                kinematics=spaces.Box(-2,2, shape=kinematics_shape, dtype=kinematics_dtype)
             )
         )
         self.action_space = self.robot.action_space
@@ -485,11 +488,15 @@ class RobotCamTaskEnv(gym.Env):
         desired_goal_coords = self.task.get_goal().astype(data_type)
         desired_joint_angles = self.robot.inverse_kinematics(
             link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0]))[:7].astype(data_type) # remove fingers angles
+        
+        kinematics_vector = np.concatenate([self.robot.get_ee_position().astype(data_type), 
+                                            self.robot.get_ee_velocity().astype(data_type)])
 
         return {
-            "observation": observation,
+            "observation": observation,            
             "achieved_goal": achieved_joint_angles,
-            "desired_goal": desired_joint_angles
+            "desired_goal": desired_joint_angles,
+            "kinematics": kinematics_vector
         }
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[Dict[str, np.ndarray], Dict[str, Any]]:
@@ -573,3 +580,4 @@ class RobotCamTaskEnv(gym.Env):
             pitch=self.render_pitch,
             roll=self.render_roll,
         )
+
