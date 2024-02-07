@@ -454,13 +454,12 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = DualCNNT(subspace, features_dim=cnn_output_dim)
+                extractors[key] = DeformableCNNT(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             elif key == "kinematics":
                 extractors[key] = FCN(subspace, features_dim=fc_output_dim)
                 total_concat_size += fc_output_dim
             else:
-                print(key)
                 # The observation key is a vector, flatten it if needed
                 extractors[key] = nn.Flatten()
                 total_concat_size += get_flattened_obs_dim(subspace)
