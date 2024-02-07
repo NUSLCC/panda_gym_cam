@@ -29,7 +29,8 @@ class ReachCam(Task):
         self.stationary_cam_pitch_angle = 40
 
         self.target_motion_pattern = "sin"
-        self.target_motion_speed = 1
+        self.target_motion_speed = 1.0
+        self.target_motion_amplitude = 0.2
         self.target_start_x_position = 0.0
         self.target_start_y_position = -0.5
         self.target_start_position = np.array([self.target_start_x_position, self.target_start_y_position, self.object_size / 2])
@@ -134,13 +135,15 @@ class ReachCam(Task):
         self.target_current_x_position = self.target_start_x_position
         self.target_current_y_position = self.target_start_y_position
         self.target_motion_pattern = random.choice(["sin", "-sin", "line"])
+        self.target_motion_speed = random.choice([1.0, 2.0, 3.0])
+        self.target_motion_amplitude = random.choice([0.1, 0.2, 0.3])
 
     def set_target_position(self) -> None:
         self.target_current_x_step += self.target_x_step_length * self.target_motion_speed
         if self.target_motion_pattern == "sin":
-            self.target_current_x_position = 0.2 * math.sin(self.target_current_x_step)
+            self.target_current_x_position = self.target_motion_amplitude * math.sin(self.target_current_x_step)
         elif self.target_motion_pattern == "-sin":
-            self.target_current_x_position = -0.2 * math.sin(self.target_current_x_step)
+            self.target_current_x_position = -self.target_motion_amplitude * math.sin(self.target_current_x_step)
         elif self.target_motion_pattern == "line":
             self.target_current_x_position = 0.0
         else:
