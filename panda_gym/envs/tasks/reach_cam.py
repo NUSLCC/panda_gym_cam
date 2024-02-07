@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import random
 from typing import Any, Dict, Optional
 
 import pybullet as p
@@ -27,6 +28,8 @@ class ReachCam(Task):
         self.stationary_cam_link = 1
         self.stationary_cam_pitch_angle = 40
 
+        self.target_motion_pattern = "sin"
+        self.target_motion_speed = 1
         self.target_start_x_position = 0.0
         self.target_start_y_position = -0.5
         self.target_start_position = np.array([self.target_start_x_position, self.target_start_y_position, self.object_size / 2])
@@ -130,10 +133,19 @@ class ReachCam(Task):
         self.sim.set_base_pose("target", self.target_start_position, np.array([0.0, 0.0, 0.0, 1.0]))
         self.target_current_x_position = self.target_start_x_position
         self.target_current_y_position = self.target_start_y_position
+        self.target_motion_pattern = random.choice(["sin", "-sin", "line"])
 
     def set_target_position(self) -> None:
-        self.target_current_x_step += self.target_x_step_length
-        self.target_current_x_position = 0.2 * math.sin(self.target_current_x_step)
+        self.target_current_x_step += self.target_x_step_length * self.target_motion_speed
+        if self.target_motion_pattern == "sin":
+            self.target_current_x_position = 0.2 * math.sin(self.target_current_x_step)
+        elif self.target_motion_pattern == "-sin":
+            self.target_current_x_position = -0.2 * math.sin(self.target_current_x_step)
+        elif self.target_motion_pattern == "line":
+            self.target_current_x_position = 0.0
+        else:
+            raise ValueError("Target motion pattern is not recognized")
+        
         self.target_current_y_position += self.target_y_step_length
         self.sim.set_base_pose("target", np.array([self.target_current_x_position, self.target_current_y_position, self.object_size / 2]), np.array([0.0, 0.0, 0.0, 1.0]))
 

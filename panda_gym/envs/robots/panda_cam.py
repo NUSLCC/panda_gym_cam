@@ -142,7 +142,6 @@ class PandaCam(PyBulletRobot):
 
         return rgb_img, depth_img
     
-
     def reset(self) -> None:
         self.set_joint_neutral()
         

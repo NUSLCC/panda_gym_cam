@@ -32,7 +32,7 @@ observation, info = env.reset()
 # plt.title('RGBD Image (Depth channel)')
 # plt.show()
 
-for i in range(200):
+for i in range(500):
     action = env.action_space.sample() # random action
     observation, reward, terminated, truncated, info = env.step(action)
     if terminated or truncated:
