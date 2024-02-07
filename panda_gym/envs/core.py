@@ -8,7 +8,7 @@ from gymnasium.utils import seeding
 import matplotlib.pyplot as plt
 
 from panda_gym.pybullet import PyBullet
-
+from panda_gym.utils import distance
 
 class PyBulletRobot(ABC):
     """Base class for robot env.
@@ -551,8 +551,9 @@ class RobotCamTaskEnv(gym.Env):
         terminated = bool(self.task.is_terminated(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)))
         success = bool(self.task.is_success(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)))
         failure = bool(self.task.is_failure(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)))
+        distance_d = distance(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32)).astype(np.float32)
         truncated = False
-        info = {"is_terminated": terminated, "is_success": success, "is_failure": failure}
+        info = {"is_terminated": terminated, "is_success": success, "is_failure": failure, "object_target_distance": distance_d}
         reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32), info))
         return observation, reward, terminated, truncated, info
 

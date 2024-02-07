@@ -21,7 +21,7 @@ if __name__=="__main__":
     
     # Save a checkpoint every 100000 steps
     checkpoint_callback = CheckpointCallback(
-    save_freq=max(100000 // num_cpu, 1),
+    save_freq=max(50000 // num_cpu, 1),
     save_path="./logs/",
     name_prefix="philip4_tqc_deep_pick_and_place",
     save_replay_buffer=True,
@@ -50,10 +50,10 @@ if __name__=="__main__":
 
     # Loading model:
 
-    model = TQC.load("logs/philip4_tqc_deep_pick_and_place_800000_steps", env = env)
-    model.load_replay_buffer("logs/philip4_tqc_deep_pick_and_place_replay_buffer_800000_steps", truncate_last_traj=False)
+    model = TQC.load("logs/philip4_tqc_deep_pick_and_place_500000_steps", env = env)
+    model.load_replay_buffer("logs/philip4_tqc_deep_pick_and_place_replay_buffer_500000_steps", truncate_last_traj=False)
     print(f'Replay buffer size is {model.replay_buffer.size()}')
-    tmp_path = "./tmp/"+"tqc_dual_philip4_pickandplace_15_20_04"
+    tmp_path = "./tmp/"+"tqc_dual_philip4_pickandplace_18_09_05"
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
     model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
