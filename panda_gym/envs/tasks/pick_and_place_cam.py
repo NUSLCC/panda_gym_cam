@@ -28,10 +28,10 @@ class PickAndPlaceCam(Task):
         self.far_distance_threshold = 0.8 
         self.object_size = 0.04
         self.get_ee_position = get_ee_position
-        self.goal_range_low = [0.15, -0.15, 0]
-        self.goal_range_high = [0.2, 0.15, 0]
+        self.goal_range_low = [0.1, -0.15, 0]
+        self.goal_range_high = [0.15, 0.15, 0]
         self.obj_range_low = [0, -0.15, 0]
-        self.obj_range_high = [0.1, 0.15, 0]
+        self.obj_range_high = [0.05, 0.15, 0]
         self.cam_width: int = 160
         self.cam_height: int = 90
         self.cam_link = 13
@@ -189,7 +189,9 @@ class PickAndPlaceCam(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             if d <= self.distance_threshold:
-                reward = np.float32(100) # reward for success
+                reward = np.float32(300) # reward for success
+            elif 0.05 < d <= 0.06: # object is hovering over target
+                reward = 0.4 / (d - 0.05)
             elif achieved_goal[2] >= 0.03: # center of mass of object is off the table
                 reward = 15-40*d # pick up and place object
             else:
