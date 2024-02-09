@@ -28,10 +28,10 @@ class PickAndPlaceCam(Task):
         self.far_distance_threshold = 0.8 
         self.object_size = 0.04
         self.get_ee_position = get_ee_position
-        self.goal_range_low = [0.15, -0.15, 0]
-        self.goal_range_high = [0.2, 0.15, 0]
+        self.goal_range_low = [0.1, -0.15, 0]
+        self.goal_range_high = [0.15, 0.15, 0]
         self.obj_range_low = [0, -0.15, 0]
-        self.obj_range_high = [0.1, 0.15, 0]
+        self.obj_range_high = [0.05, 0.15, 0]
         self.cam_width: int = 160
         self.cam_height: int = 90
         self.cam_link = 13
