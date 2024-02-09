@@ -9,4 +9,5 @@ from panda_gym.envs.panda_tasks import (
     PandaSlideEnv,
     PandaStackEnv,
     PandaLiftCamEnv,
+    PandaPushCamEnv,
 )
