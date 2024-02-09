@@ -176,9 +176,14 @@ class LiftCam(Task):
         if self.reward_type == "sparse":
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
-            reward = -2*ee_distance # move towards object
-            if ee_distance < 0.1:
-                reward += 15-150*d # lift object
+            reward = np.float32(0)
+            reward_reaching = 1 - np.tanh(9*ee_distance)
+            reward_lifting = np.float32(0)
+            if achieved_goal[2] >= 0.03: # center of mass of object is off the table
+                reward_lifting = 1 - np.tanh(20*(d-0.1))
+            reward += reward_reaching + 1.5*reward_lifting
+            # print(f'Reward: {reward}')
+            # print(f'Reach: {reward_reaching}, lift: {reward_lifting}')
             return reward.astype(np.float32)
     
 
