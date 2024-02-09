@@ -188,15 +188,17 @@ class PickAndPlaceCam(Task):
         if self.reward_type == "sparse":
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
-            if d <= self.distance_threshold:
-                reward = np.float32(200) # reward for success
-            elif 0.05 < d <= 0.065: 
-                reward = 0.3 / (d - 0.05) # reward to overcome object hovering problem
-            elif achieved_goal[2] >= 0.03: # center of mass of object is off the table
-                reward = 15-40*d # pick up and place object
-            else:
-                reward = -2*ee_distance # move towards object
-            reward -= 0.1 # small negative reward for each timestep 
+            reward = np.float32(0)
+            reward_reaching = 1 - np.tanh(9*ee_distance)
+            reward_hovering = np.float32(0)
+            reward_grasp = np.float32(0)
+            if achieved_goal[2] >= 0.03: # center of mass of object is off the table
+                reward_grasp = 1 - np.tanh(10*(d-0.05))
+            if 0.05 < d <= 0.065: 
+                reward_hovering = 1 - np.tanh(50*(d-0.05))
+            reward += reward_reaching + 1.5*reward_grasp + 2*reward_hovering
+            # print(f'Reward: {reward}')
+            # print(f'Reach: {reward_reaching}, grasp: {reward_grasp}, hover: {reward_hovering}')
             return reward.astype(np.float32)
     
 
