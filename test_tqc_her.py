@@ -29,7 +29,7 @@ if __name__=="__main__":
     )
     
     # Training from scratch:
-    model = TQC(policy="MultiInputPolicy",env=env, batch_size=1024, gamma=0.95, learning_rate=1e-4, verbose=1, 
+    model = TQC(policy="MultiInputPolicy",env=env, batch_size=256, gamma=0.95, learning_rate=1e-3, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
                 buffer_size=20000, replay_buffer_class=None, device="cuda:0",
                 # Parameters for HER
@@ -37,7 +37,7 @@ if __name__=="__main__":
                 # Parameters for TQC
                 top_quantiles_to_drop_per_net=2, 
                 policy_kwargs=dict(
-                    features_extractor_class=CustomCombinedExtractor,
+                    features_extractor_class=DeepConvNetCombinedExtractor,
                     net_arch=[512, 512, 512], 
                     n_critics=2, 
                     n_quantiles=25)
