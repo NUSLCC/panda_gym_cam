@@ -496,7 +496,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = CNNGRU(subspace, features_dim=cnn_output_dim)
+                extractors[key] = NatureCNNT(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             elif key == "kinematics":
                 extractors[key] = FCN(subspace, features_dim=fc_output_dim)
@@ -653,31 +653,6 @@ def generate_object_range():
     # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated
     obj_range_low = np.array([x_min, y_min, 0])
     obj_range_high = np.array([x_max, y_max, 0]) 
-
-    return obj_range_low, obj_range_high
-
-def generate_semicircle_object_range():
-    """
-    Calculates the (x,y,z) array ranges where the object can be generated, such that it is inside semi-circle reachable area of Panda arm (radius = 0.64m)
-
-    Returns: 
-        obj_range_low (np.ndarray): coordinates of the minimum of obj range
-        obj_range_high (np.ndarray): coordinates of the maximum of obj range
-    """
-
-    radius = 0.64
-    base_x = -0.68 # x coord of base of panda robot
-    x_min = -0.36
-    x_max = -0.04  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
-    y_min = -0.64
-    y_max = 0.64
-    sampled_x = np.random.uniform(x_min, x_max)
-    x_distance_from_base = sampled_x - base_x
-    sampled_y = math.sqrt(radius ** 2 - sampled_x ** 2) # need to adjust y according to equation of a circle
-
-    # Calculate obj_range_low and obj_range_high - they form the bounding box where the object can be randomly generated\
-    obj_range_low = np.array([sampled_x, -sampled_y, 0])
-    obj_range_high = np.array([sampled_x, sampled_y, 0]) 
 
     return obj_range_low, obj_range_high
 

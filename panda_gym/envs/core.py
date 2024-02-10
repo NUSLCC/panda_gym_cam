@@ -403,7 +403,7 @@ class RobotCamTaskEnv(gym.Env):
         self.task = task
         self.image_queue_length = 2
         self.image_deque = deque(maxlen=self.image_queue_length)
-        observation, info = self.reset()  # required for init; seed can be changed later
+        observation, info = self.reset(seed=0)  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         observation_dtype = observation["observation"].dtype
         achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles

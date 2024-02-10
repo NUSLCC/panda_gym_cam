@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import random
+random.seed(0)
 from typing import Any, Dict, Optional
 
 import pybullet as p
@@ -135,7 +136,7 @@ class ReachCam(Task):
         self.target_current_x_position = self.target_start_x_position
         self.target_current_y_position = self.target_start_y_position
         self.target_motion_pattern = random.choice(["sin", "-sin", "line"])
-        self.target_motion_speed = random.choice([1.0, 2.0, 3.0])
+        self.target_motion_speed = random.choice([0.5, 1.0, 2.0])
         self.target_motion_amplitude = random.choice([0.1, 0.2, 0.3])
 
     def set_target_position(self) -> None:

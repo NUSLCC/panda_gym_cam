@@ -13,7 +13,7 @@ if __name__=="__main__":
 
     model = SAC(policy="MultiInputPolicy",env=env, batch_size=2048, gamma=0.95, learning_rate=1e-4, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
-                buffer_size=50000, replay_buffer_class=HerReplayBuffer, device="cuda:0",
+                buffer_size=50000, replay_buffer_class=HerReplayBuffer, device="cuda:0", seed=0,
                 # Parameters for HER
                 replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for SAC
@@ -25,7 +25,7 @@ if __name__=="__main__":
                 )
 
     # print(model.policy)
-    prefix = "sac_rgb_rand_moving_grucnn_ee_kine"
+    prefix = "sac_rgb_rand_moving_naturecnn_ee_kine"
     tmp_path = "./tmp/"+datetime.now().strftime(prefix + "_%H_%M_%d")
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
