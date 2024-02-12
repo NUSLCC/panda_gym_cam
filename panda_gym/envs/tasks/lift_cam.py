@@ -177,10 +177,10 @@ class LiftCam(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             reward = np.float32(0)
-            reward_reaching = 1 - np.tanh(9*ee_distance)
+            reward_reaching = -np.tanh(9*ee_distance)
             reward_lifting = np.float32(0)
             if achieved_goal[2] >= 0.03: # center of mass of object is off the table
-                reward_lifting = 1 - np.tanh(20*(d-0.1))
+                reward_lifting = -np.tanh(20*(d-0.1))
             reward += reward_reaching + 1.5*reward_lifting
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, lift: {reward_lifting}')
