@@ -193,9 +193,9 @@ class PickAndPlaceCam(Task):
             reward_hovering = np.float32(0)
             reward_grasp = np.float32(0)
             if achieved_goal[2] >= 0.03: # center of mass of object is off the table
-                reward_grasp = 1 - np.tanh(10*(d-0.05))
+                reward_grasp = 1 - np.tanh(10*(np.linalg.norm(d-0.05)))
             if 0.05 < d <= 0.065: 
-                reward_hovering = 1 - np.tanh(50*(d-0.05))
+                reward_hovering = 1 - np.tanh(50*(np.linalg.norm(d-0.05)))
             reward += reward_reaching + 2*reward_grasp + 3*reward_hovering
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, grasp: {reward_grasp}, hover: {reward_hovering}')
