@@ -189,11 +189,14 @@ class PushCam(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             reward = np.float32(0)
-            reward_reaching = 1 - np.tanh(9*ee_distance)
+            reward_reaching = -np.tanh(9*ee_distance)
             reward_pushing = np.float32(0)
+            reward_pushing_weight = np.float32(1.5)
             if ee_distance <= 0.04: # ee is pushing object
-                reward_pushing = 1 - np.tanh(10*(d-0.05))
-            reward += reward_reaching + 1.5*reward_pushing 
+                reward_pushing = -reward_pushing_weight*np.tanh(10*(np.linalg.norm(d-0.05)))
+            else:
+                reward_pushing = -reward_pushing_weight
+            reward += reward_reaching + reward_pushing 
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, push: {reward_push}')
             return reward.astype(np.float32)
