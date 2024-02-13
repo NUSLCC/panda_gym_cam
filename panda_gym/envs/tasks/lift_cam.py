@@ -179,9 +179,12 @@ class LiftCam(Task):
             reward = np.float32(0)
             reward_reaching = -np.tanh(9*ee_distance)
             reward_lifting = np.float32(0)
+            reward_lifting_weight = np.float32(1.5)
             if achieved_goal[2] >= 0.03: # center of mass of object is off the table
-                reward_lifting = -np.tanh(20*(d-0.1))
-            reward += reward_reaching + 1.5*reward_lifting
+                reward_lifting = -reward_lifting_weight*np.tanh(20*(d-0.1))
+            else:
+                reward_lifting = -reward_lifting_weight
+            reward += reward_reaching + reward_lifting
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, lift: {reward_lifting}')
             return reward.astype(np.float32)
