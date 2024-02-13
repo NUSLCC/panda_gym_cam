@@ -181,7 +181,7 @@ class LiftCam(Task):
             reward_lifting = np.float32(0)
             reward_lifting_weight = np.float32(1.5)
             if achieved_goal[2] >= 0.03: # center of mass of object is off the table
-                reward_lifting = -reward_lifting_weight*np.tanh(20*(d-0.1))
+                reward_lifting = -reward_lifting_weight*np.tanh(20*(np.linalg.norm(d-self.distance_threshold)))
             else:
                 reward_lifting = -reward_lifting_weight
             reward += reward_reaching + reward_lifting
