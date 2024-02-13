@@ -29,7 +29,7 @@ if __name__=="__main__":
     )
     
     # Training from scratch:
-    model = TQC(policy="MultiInputPolicy",env=env, batch_size=256, gamma=0.95, learning_rate=1e-3, verbose=1, 
+    model = TQC(policy="MultiInputPolicy",env=env, batch_size=256, gamma=0.95, learning_rate=1e-4, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
                 buffer_size=20000, replay_buffer_class=None, device="cuda:0",
                 # Parameters for HER
@@ -50,10 +50,10 @@ if __name__=="__main__":
 
     # Loading model:
 
-    # model = TQC.load("logs/philip4_tqc_deep_pick_and_place_820000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_tqc_deep_pick_and_place_replay_buffer_820000_steps", truncate_last_traj=False)
+    # model = TQC.load("logs/philip4_tqc_deep_pick_and_place_1710000_steps", env = env)
+    # model.load_replay_buffer("logs/philip4_tqc_deep_pick_and_place_replay_buffer_1710000_steps", truncate_last_traj=False)
     # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"tqc_dual_philip4_pickandplace_22_33_09"
+    # tmp_path = "./tmp/"+"tqc_dual_philip4_pickandplace_11_01_11"
     # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     # model.set_logger(new_logger)
     # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
