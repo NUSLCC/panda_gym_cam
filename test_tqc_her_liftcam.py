@@ -21,7 +21,7 @@ if __name__=="__main__":
     
     # Save a checkpoint every 100000 steps
     checkpoint_callback = CheckpointCallback(
-    save_freq=max(100000 // num_cpu, 1),
+    save_freq=max(50000 // num_cpu, 1),
     save_path="./logs/",
     name_prefix="philip4_tqc_deep_lift",
     save_replay_buffer=True,
@@ -29,33 +29,33 @@ if __name__=="__main__":
     )
     
     # Training from scratch:
-    model = TQC(policy="MultiInputPolicy",env=env, batch_size=256, gamma=0.95, learning_rate=1e-4, verbose=1, 
-                train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
-                buffer_size=20000, replay_buffer_class=None, device="cuda:0",
-                # Parameters for HER
-              #  replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
-                # Parameters for TQC
-                top_quantiles_to_drop_per_net=2, 
-                policy_kwargs=dict(
-                    features_extractor_class=DeepConvNetCombinedExtractor,
-                    net_arch=[512, 512, 512], 
-                    n_critics=2, 
-                    n_quantiles=25)
-                )
+    # model = TQC(policy="MultiInputPolicy",env=env, batch_size=256, gamma=0.95, learning_rate=1e-4, verbose=1, 
+    #             train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
+    #             buffer_size=20000, replay_buffer_class=None, device="cuda:0",
+    #             # Parameters for HER
+    #           #  replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
+    #             # Parameters for TQC
+    #             top_quantiles_to_drop_per_net=2, 
+    #             policy_kwargs=dict(
+    #                 features_extractor_class=DeepConvNetCombinedExtractor,
+    #                 net_arch=[512, 512, 512], 
+    #                 n_critics=2, 
+    #                 n_quantiles=25)
+    #             )
     
-    tmp_path = "./tmp/"+datetime.now().strftime('tqc_dual_philip4_lift_%H_%M_%d')
-    new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
-    model.set_logger(new_logger)
-    model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, progress_bar=True)
+    # tmp_path = "./tmp/"+datetime.now().strftime('tqc_dual_philip4_lift_%H_%M_%d')
+    # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+    # model.set_logger(new_logger)
+    # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, progress_bar=True)
 
     # Loading model:
 
-    # model = TQC.load("logs/philip4_tqc_deep_lift_100000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_tqc_deep_lift_replay_buffer_100000_steps", truncate_last_traj=False)
-    # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"tqc_dual_philip4_pickandplace_23_08_12"
-    # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
-    # model.set_logger(new_logger)
-    # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
+    model = TQC.load("logs/philip4_tqc_deep_lift_650000_steps", env = env)
+    model.load_replay_buffer("logs/philip4_tqc_deep_lift_replay_buffer_650000_steps", truncate_last_traj=False)
+    print(f'Replay buffer size is {model.replay_buffer.size()}')
+    tmp_path = "./tmp/"+"tqc_dual_philip4_lift_20_54_14"
+    new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
+    model.set_logger(new_logger)
+    model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
     
     model.save("tqc_her_philip4_pickandplace")

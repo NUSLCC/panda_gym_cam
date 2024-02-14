@@ -19,14 +19,13 @@ class LiftCam(Task):
         sim: PyBullet,
         get_ee_position,
         reward_type: str = "dense",
-        distance_threshold: float = 0.02,
+        distance_threshold: float = 0.03,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.object_size = 0.04
-        self.far_distance_threshold = 0.8 
-        self.object_size = 0.04
+        self.far_distance_threshold = 3 
         self.get_ee_position = get_ee_position
         self.lift_distance = 0.1 # distance to lift object to achieve success
         self.goal_range_low = None
@@ -177,18 +176,11 @@ class LiftCam(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             reward = np.float32(0)
-            reward_reaching = -np.tanh(9*ee_distance)
+            reward_reaching = 1 - np.tanh(9*ee_distance)
             reward_lifting = np.float32(0)
-            reward_lifting_weight = np.float32(1.5)
-            if achieved_goal[2] >= 0.03: # center of mass of object is off the table
-                reward_lifting = -reward_lifting_weight*(np.tanh(20*(d-self.distance_threshold)))
-                # reward += reward_reaching + reward_lifting - 0.05
-                # reward = np.clip(reward, 0, 1+reward_lifting_weight)
-            else:
-                reward_lifting = -reward_lifting_weight
-                # reward += reward_reaching + reward_lifting - 0.02
-                # reward = np.clip(reward, 0, 1+reward_lifting_weight)
-            reward += reward_reaching + reward_lifting
+            if ee_distance <= 0.03: # center of mass of object is off the table
+                reward_lifting = 1 - np.tanh(15*(d-0.03))
+            reward += reward_reaching + 5*reward_lifting
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, lift: {reward_lifting}')
             return reward.astype(np.float32)

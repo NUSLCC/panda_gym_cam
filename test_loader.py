@@ -5,10 +5,11 @@ import time
 import gymnasium as gym
 import matplotlib.pyplot as plt
 
-env = gym.make('PandaPickandPlaceCam-v3', render_mode="human", control_type="ee") # rgb_array
+env = gym.make('PandaLiftCam-v3', render_mode="human", control_type="ee") # rgb_array
 print(env.action_space)
 # HER must be loaded with the env
-model = SAC.load("logs/philip4_tqc_deep_pick_and_place_1380000_steps", env=env)
+#model = SAC.load("logs/Keep/philip4_tqc_deep_pick_and_place_1860000_steps", env=env)
+model = SAC.load("logs/philip4_tqc_deep_lift_800000_steps", env=env)
 
 obs, _ = env.reset()
 # print(obs['observation'])
