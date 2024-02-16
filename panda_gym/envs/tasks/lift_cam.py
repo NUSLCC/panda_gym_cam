@@ -175,12 +175,15 @@ class LiftCam(Task):
         if self.reward_type == "sparse":
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
+            gripper_distance = self.sim.get_joint_angle("panda_camera", 9) + self.sim.get_joint_angle("panda_camera", 10)
             reward = np.float32(0)
             reward_reaching = 1 - np.tanh(9*ee_distance)
             reward_lifting = np.float32(0)
+            reward_gripping = np.float32(0)
             if ee_distance <= 0.03: # center of mass of object is off the table
+                reward_gripping = 1 - np.tanh((gripper_distance-0.04)/0.02)
                 reward_lifting = 1 - np.tanh(15*(d-0.03))
-            reward += reward_reaching + 5*reward_lifting
+            reward += reward_reaching + 2*reward_gripping + 5*reward_lifting
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, lift: {reward_lifting}')
             return reward.astype(np.float32)
