@@ -25,7 +25,7 @@ class PushCam(Task):
         self.reward_type = reward_type
         self.distance_threshold = distance_threshold
         self.object_size = 0.04
-        self.far_distance_threshold = 0.8 
+        self.far_distance_threshold = 5 
         self.object_size = 0.04
         self.get_ee_position = get_ee_position
         self.goal_range_low = [0.1, -0.15, 0]
@@ -197,7 +197,7 @@ class PushCam(Task):
             reward_pushing = np.float32(0)
             if ee_distance <= 0.04: # ee is pushing object
                 reward_pushing = 1 - np.tanh(10*(d-0.05))
-            if d <= 0.06: # condition for hovering
+            if 0.05 < d <= 0.06: # condition for hovering
                 self.hover_list.append('yes')
             if len(self.hover_list) >= 8: # penalize hovering
                 reward -= 4
