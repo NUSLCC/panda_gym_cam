@@ -243,6 +243,75 @@ class DualCNNT(BaseFeaturesExtractor):
         return torch.cat((forward1, forward2), dim=1)
 
 
+class DualLSTM(BaseFeaturesExtractor):
+    def __init__(
+        self,
+        observation_space: gym.Space,
+        features_dim: int = 512,
+    ) -> None:
+        assert isinstance(observation_space, spaces.Box), (
+            "DualCNNT must be used with a gym.spaces.Box ",
+            f"observation space, not {observation_space}",
+        )
+        super().__init__(observation_space, features_dim)
+        # We assume CxHxW images (channels first)
+        n_input_channels = observation_space.shape[1] # [T, C, H, W]
+        each_network_channels = int(n_input_channels/2)
+
+        self.cnn1 = nn.Sequential(
+            nn.Conv2d(each_network_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        self.cnn2 = nn.Sequential(
+            nn.Conv2d(each_network_channels, 32, kernel_size=8, stride=4, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten(),
+        )
+
+        # Compute flatten shape by doing one forward pass
+        with torch.no_grad():
+            sample_array = observation_space.sample()[None][:,-1,]
+            channel_dim = sample_array.shape[1]
+            each_channel_dim = int(channel_dim/2)
+            sample_tensor1 = torch.tensor(sample_array[:, :each_channel_dim, :, :]).float()
+            sample_tensor2 = torch.tensor(sample_array[:, each_channel_dim:, :, :]).float()
+
+            n_flatten1 = self.cnn1(sample_tensor1).shape[1]
+            n_flatten2 = self.cnn2(sample_tensor2).shape[1]
+        
+        self.linear1 = nn.Sequential(nn.Linear(n_flatten1, int(features_dim/2)), nn.ReLU())
+        self.linear2 = nn.Sequential(nn.Linear(n_flatten2, int(features_dim/2)), nn.ReLU())
+        
+        self.lstm = nn.LSTM(input_size=features_dim, hidden_size=features_dim, num_layers=3)
+        self.fc = nn.Linear(features_dim, features_dim)
+
+    def forward(self, observations: torch.Tensor) -> torch.Tensor:
+        hidden = None
+        channel_dim = observations[:,-1,].shape[1]
+        each_channel_dim = int(channel_dim/2)
+        for t in range(observations.size(1)):
+            observations1 = observations[:,t,][:, :each_channel_dim, :, :]
+            observations2 = observations[:,t,][:, each_channel_dim:, :, :]
+            forward1 = self.linear1(self.cnn1(observations1))
+            forward2 = self.linear2(self.cnn2(observations2))
+            x = torch.cat((forward1, forward2), dim=1)
+            out, hidden = self.lstm(x.unsqueeze(0), hidden)         
+
+        x = self.fc(out[-1, :, :])
+        x = F.relu(x)
+        return x
+
+
 class CNNLSTM(BaseFeaturesExtractor):
     def __init__(
         self,
@@ -496,7 +565,7 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "observation":
-                extractors[key] = DeformableCNNT(subspace, features_dim=cnn_output_dim)
+                extractors[key] = DualLSTM(subspace, features_dim=cnn_output_dim)
                 total_concat_size += cnn_output_dim
             elif key == "kinematics":
                 extractors[key] = FCN(subspace, features_dim=fc_output_dim)
