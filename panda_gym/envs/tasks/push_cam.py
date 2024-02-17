@@ -142,6 +142,8 @@ class PushCam(Task):
         # self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
         # self.goal_range_low, self.goal_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
         # self.obj_range_low, self.obj_range_high = calculate_object_range(initial_x_coord=self.robot_cam_initial_x, initial_y_coord=self.robot_cam_initial_y, initial_z_coord=self.robot_cam_initial_z)
+        self.num_timesteps = 0
+        self.hover_list = []
         self.goal = self._sample_goal()
         object_position = self._sample_object()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
@@ -180,6 +182,8 @@ class PushCam(Task):
         return np.array(ee_distance > self.far_distance_threshold, dtype=bool)
     
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
+        self.num_timesteps += 1
+       # print(self.num_timesteps)
         d = distance(achieved_goal, desired_goal).astype(np.float32)
         ee_position = np.array(self.get_ee_position()).astype(np.float32)
         ee_distance = distance(achieved_goal, ee_position).astype(np.float32)
@@ -193,6 +197,16 @@ class PushCam(Task):
             reward_pushing = np.float32(0)
             if ee_distance <= 0.04: # ee is pushing object
                 reward_pushing = 1 - np.tanh(10*(d-0.05))
+            if d <= 0.06: # condition for hovering
+                self.hover_list.append('yes')
+            if len(self.hover_list) >= 8: # penalize hovering
+                reward -= 4
+            if self.num_timesteps == 100 and 0.05 < d <= 0.06: # penalize hovering leading to truncation
+                reward -= 50
+            if d < 0.05: # reward for success
+                reward += 50
+                if len(self.hover_list) <= 8: # success without excess hovering gets rewarded more 
+                    reward += 50
             reward += reward_reaching + 3*reward_pushing 
             # print(f'Reward: {reward}')
             # print(f'Reach: {reward_reaching}, push: {reward_push}')
