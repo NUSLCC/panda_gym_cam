@@ -209,8 +209,8 @@ class PushCam(Task):
                 if d > 0.5: # penalize object being pushed far away
                     reward -= 10
             if d < 0.05: # reward for success
-                reward += 50
-                # if len(self.hover_list) <= 8: # success without excess hovering gets rewarded more 
+                reward += 100
+                # if len(self.hover_list) <= 15: # success without excess hovering gets rewarded more 
                 #     reward += 50
             reward += reward_reaching + 3*reward_pushing 
             # print(f'Reward: {reward}')
