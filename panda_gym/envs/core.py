@@ -483,6 +483,12 @@ class RobotCamTaskEnv(gym.Env):
         observation = np.concatenate((robot_rgb, task_rgb), axis=-1) # concat along channel dim
         observation = np.transpose(observation, (2, 0, 1)) 
 
+        # current_joint_angles = self.robot.get_arm_joint_angles().astype(np.float32)
+        # desired_goal_coords = self.task.get_goal().astype(np.float32)
+        # joint_angles_required = self.robot.inverse_kinematics(
+        #     link=self.robot.ee_link, position=desired_goal_coords, orientation=np.array([1.0, 0.0, 0.0, 0.0])
+        # )[:7].astype(np.float32) # remove fingers angles
+
         achieved_goal = self.task.get_achieved_goal().astype(np.float32)
         desired_goal = self.task.get_goal().astype(np.float32)
         ee_pos = np.array(self.robot.get_ee_position(), dtype=data_type)
