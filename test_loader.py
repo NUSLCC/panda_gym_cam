@@ -5,10 +5,10 @@ import time
 import gymnasium as gym
 import matplotlib.pyplot as plt
 
-env = gym.make('PandaPushCam-v3', render_mode="human", control_type="ee") # rgb_array
+env = gym.make('PandaPushCamJoints-v3', render_mode="human", control_type="joints") # rgb_array
 print(env.action_space)
 # HER must be loaded with the env
-model = SAC.load("logs/philip4_tqc_deep_push_970000_steps", env=env)
+model = SAC.load("logs/philip4_tqc_deep_push_joints_1400000_steps", env=env)
 
 obs, _ = env.reset()
 # print(obs['observation'])
