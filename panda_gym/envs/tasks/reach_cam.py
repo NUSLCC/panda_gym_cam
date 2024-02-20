@@ -39,7 +39,8 @@ class ReachCam(Task):
         self.target_current_y_position = self.target_start_y_position
         
         self.target_current_x_step = 0.0
-        self.target_x_step_length = 2*math.pi/100 # 100 is the max of steps per run
+        self.target_total_x_step = 100
+        self.target_x_step_length = 2*math.pi/self.target_total_x_step
         self.target_y_step_length = 0.01
 
         with self.sim.no_rendering():
@@ -136,6 +137,7 @@ class ReachCam(Task):
         self.target_current_x_position = self.target_start_x_position
         self.target_current_y_position = self.target_start_y_position
         self.target_motion_pattern = random.choice(["sin", "-sin", "line"])
+        # self.target_motion_pattern = random.choice(["zig", "-zig", "line"])
         self.target_motion_speed = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
         self.target_motion_amplitude = random.choice([0.1, 0.15, 0.2, 0.25, 0.3])
 
@@ -145,6 +147,10 @@ class ReachCam(Task):
             self.target_current_x_position = self.target_motion_amplitude * math.sin(self.target_current_x_step)
         elif self.target_motion_pattern == "-sin":
             self.target_current_x_position = -self.target_motion_amplitude * math.sin(self.target_current_x_step)
+        # if self.target_motion_pattern == "zig":
+        #     self.target_current_x_position = self.target_motion_amplitude * self.calculate_zig(self.target_current_x_step)
+        # elif self.target_motion_pattern == "-zig":
+        #     self.target_current_x_position = -self.target_motion_amplitude * self.calculate_zig(self.target_current_x_step)
         elif self.target_motion_pattern == "line":
             self.target_current_x_position = 0.0
         else:
@@ -171,6 +177,8 @@ class ReachCam(Task):
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
             return -d.astype(np.float32)
-
-    def get_obj_pos_rotation(self) -> np.ndarray:
-        return np.array([])  # no obj related pos or rotation
+    
+    def calculate_zig(self, step):
+        quantile = self.target_total_x_step / 4
+        indicator = step % quantile
+        return 
