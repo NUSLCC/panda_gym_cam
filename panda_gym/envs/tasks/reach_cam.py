@@ -160,6 +160,8 @@ class ReachCam(Task):
         return ee_position
 
     def reset(self) -> None:
+        self.num_timesteps = 0
+        self.hover_list = []
         self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
         self.goal_range_low, self.goal_range_high = generate_semicircle_object_range()
         self.goal = self._sample_goal()
@@ -187,11 +189,27 @@ class ReachCam(Task):
         return np.array(d > self.far_distance_threshold, dtype=bool)
 
     def compute_reward(self, achieved_goal, desired_goal, info: Dict[str, Any]) -> np.ndarray:
-        d = distance(achieved_goal, desired_goal)
+        self.num_timesteps += 1
+       # print(self.num_timesteps)
+        d = distance(achieved_goal, desired_goal).astype(np.float32)
         if self.reward_type == "sparse":
             return -np.array(d > self.distance_threshold, dtype=np.float32)
         else:
-            return -d.astype(np.float32)
+            reward = np.float32(0)
+            reward = 1 - np.tanh(9*d)
+            if 0.05 < d <= 0.06: # condition for hovering
+                self.hover_list.append('yes')
+            if len(self.hover_list) >= 15: # penalize hovering
+                reward -= 1
+            if d > self.far_distance_threshold: # penalize failure 
+                reward -= 10
+            if self.num_timesteps == 100:
+                if 0.05 < d <= 0.06: # penalize hovering leading to truncation
+                    reward -= 40
+            if d < 0.05: # reward for success
+                reward += 80
+                # if len(self.hover_list) <= 15: # success without excess hovering gets rewarded more 
+                #     reward += 50
 
     def get_obj_pos_rotation(self) -> np.ndarray:
         return np.array([])  # no obj related pos or rotation
