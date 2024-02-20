@@ -216,6 +216,7 @@ class ReachCam(Task):
                 reward += 80
                 # if len(self.hover_list) <= 15: # success without excess hovering gets rewarded more 
                 #     reward += 50
+            return reward.astype(np.float32)
 
     def get_obj_pos_rotation(self) -> np.ndarray:
         return np.array([])  # no obj related pos or rotation
