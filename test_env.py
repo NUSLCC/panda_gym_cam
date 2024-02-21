@@ -1,10 +1,11 @@
 from panda_gym.envs import PandaReachCamEnv
+from panda_gym.envs import PandaMovingReachCamEnv
 from panda_gym.envs import PandaReachCamObstacleEnv
 from panda_gym.envs import PandaPickandPlaceCamEnv
 from panda_gym.envs import PandaLiftCamEnv
 from panda_gym.envs import PandaPushCamEnv
 
-env = PandaPushCamEnv(render_mode="human") # rgb_array
+env = PandaMovingReachCamEnv(render_mode="human") # rgb_array
 
 observation, info = env.reset()
 

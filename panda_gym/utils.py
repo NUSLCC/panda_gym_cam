@@ -789,10 +789,10 @@ def run_one_image(img, model):
 def velocity_calculator(
     target_position: np.ndarray,
     initial_velocity: np.ndarray,
-    x_min: float = -0.15,
-    x_max: float = 0.2,
-    y_min: float = -0.3,
-    y_max: float = 0.3,
+    x_min: float = -0.3,
+    x_max: float = 0.05,
+    y_min: float = -0.6,
+    y_max: float = 0.6,
     ):
     """
     Calculates velocity of the target to avoid it falling off the table
