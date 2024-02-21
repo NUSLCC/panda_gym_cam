@@ -4,6 +4,7 @@ from panda_gym.envs.panda_tasks import (
     PandaPickandPlaceCamEnv,
     PandaPushEnv,
     PandaReachEnv,
+    PandaMovingReachCamEnv,
     PandaReachCamEnv,
     PandaReachCamObstacleEnv,
     PandaSlideEnv,
