@@ -23,7 +23,7 @@ if __name__=="__main__":
     checkpoint_callback = CheckpointCallback(
     save_freq=max(50000 // num_cpu, 1),
     save_path="./logs/",
-    name_prefix="philip4_tqc_deep_reach_joints",
+    name_prefix=datetime.now().strftime('philip4_tqc_deep_reach_joints_%H_%M_%d'),
     save_replay_buffer=True,
     save_vecnormalize=True,
     )
@@ -50,10 +50,10 @@ if __name__=="__main__":
 
     # Loading model:
 
-    # model = TQC.load("logs/philip4_tqc_deep_reach_joints_100000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_tqc_deep_reach_joints_replay_buffer_100000_steps", truncate_last_traj=False)
+    # model = TQC.load("logs/philip4_tqc_deep_reach_joints_850000_steps", env = env)
+    # model.load_replay_buffer("logs/philip4_tqc_deep_reach_joints_replay_buffer_850000_steps", truncate_last_traj=False)
     # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"tqc_dual_philip4_reach_joints_23_08_12"
+    # tmp_path = "./tmp/"+"tqc_dual_philip4_reach_joints_09_50_21"
     # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     # model.set_logger(new_logger)
     # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
