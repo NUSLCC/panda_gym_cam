@@ -136,17 +136,20 @@ class ReachCam(Task):
         self.sim.set_base_pose("target", self.target_start_position, np.array([0.0, 0.0, 0.0, 1.0]))
         self.target_current_x_position = self.target_start_x_position
         self.target_current_y_position = self.target_start_y_position
+        self.target_current_x_step = 0.0
         # self.target_motion_pattern = random.choice(["sin", "-sin", "line"])
         self.target_motion_pattern = random.choice(["zig", "-zig", "line"])
         self.target_motion_speed = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
         self.target_motion_amplitude = random.choice([0.1, 0.15, 0.2, 0.25, 0.3])
 
     def set_target_position(self) -> None:
-        self.target_current_x_step += self.target_x_step_length * self.target_motion_speed
+        # self.target_current_x_step += self.target_x_step_length * self.target_motion_speed
         # if self.target_motion_pattern == "sin":
         #     self.target_current_x_position = self.target_motion_amplitude * math.sin(self.target_current_x_step)
         # elif self.target_motion_pattern == "-sin":
         #     self.target_current_x_position = -self.target_motion_amplitude * math.sin(self.target_current_x_step)
+        
+        self.target_current_x_step += 1.0 * self.target_motion_speed
         if self.target_motion_pattern == "zig":
             self.target_current_x_position = self.target_motion_amplitude * self.calculate_zig(self.target_current_x_step)
         elif self.target_motion_pattern == "-zig":
@@ -180,12 +183,21 @@ class ReachCam(Task):
     
     def calculate_zig(self, step):
         quantile = self.target_total_x_step / 4.0
-        direction = step / quantile
+        direction = (step / quantile) % 4.0
         if 0.0<=direction<1.0:
+            # print(step)
+            # print(direction)
             return direction
         elif 1.0<=direction<3.0:
+            # print(step)
+            # print(2.0-direction)
             return (2.0-direction)
         elif 3.0<=direction<=4.0:
+            # print(step)
+            # print(direction-4.0)
             return (direction-4.0)
         else:
+            print("---")
+            print(step)
+            print(direction)
             raise ValueError("Error in calculate zig")

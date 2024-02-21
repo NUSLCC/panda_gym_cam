@@ -38,3 +38,4 @@ for i in range(500):
     if terminated or truncated:
         env.reset()
         print(i+1)
+print(500)
