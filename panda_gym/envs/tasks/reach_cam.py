@@ -31,7 +31,7 @@ class ReachCam(Task):
         self.distance_threshold=distance_threshold
         self.far_distance_threshold = 1.0
         self.object_size = 0.04
-        self.object_velocity_max = [0.15, 0.15, 0] # (x,y,z) velocity 
+        self.object_velocity_max = [0.1, 0.1, 0] # (x,y,z) velocity 
         self.get_ee_position = get_ee_position
         self.goal_range_low = None
         self.goal_range_high = None
@@ -116,7 +116,7 @@ class ReachCam(Task):
         # )
 
     def get_obs(self) -> np.ndarray:
-        rgb_img = self.render_from_stationary_cam() 
+        return self.render_from_stationary_cam() 
         # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
@@ -125,7 +125,6 @@ class ReachCam(Task):
         # self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         # target_velocity = self.object_initial_velocity
         # self.sim.set_base_velocity("target", target_velocity)
-        return rgb_img
 
     def render_from_stationary_cam(
         self,
@@ -151,9 +150,15 @@ class ReachCam(Task):
         nearVal = 0.01
         farVal = 100
         proj_matrix = self.sim.physics_client.computeProjectionMatrixFOV(fov, aspect_ratio, nearVal, farVal)
+
         rgb_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[2]
         rgb_img = np.array(rgb_img).reshape(cam_height, cam_width, 4)[:, :, :3]
-        return rgb_img
+
+        depth_img = self.sim.physics_client.getCameraImage(cam_width, cam_height, view_matrix, proj_matrix, renderer = p.ER_BULLET_HARDWARE_OPENGL)[3]
+        depth_img = np.array(depth_img).reshape((cam_height, cam_width))
+        depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
+        depth_img = depth_img[..., np.newaxis]
+
 
     def get_achieved_goal(self) -> np.ndarray:
         ee_position = np.array(self.get_ee_position())
