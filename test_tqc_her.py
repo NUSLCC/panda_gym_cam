@@ -21,9 +21,9 @@ if __name__=="__main__":
     
     # Save a checkpoint every 100000 steps
     checkpoint_callback = CheckpointCallback(
-    save_freq=max(100000 // num_cpu, 1),
+    save_freq=max(50000 // num_cpu, 1),
     save_path="./logs/",
-    name_prefix="philip4_tqc_deep_pick_and_place",
+    name_prefix=datetime.now().strftime('philip4_tqc_deep_pickandplace_%H_%M_%d'),
     save_replay_buffer=True,
     save_vecnormalize=True,
     )
