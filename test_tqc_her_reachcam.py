@@ -14,7 +14,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
-    env_id = "PandaPickandPlaceCamDense-v3"
+    env_id = "PandaReachCam-v3"
     num_cpu = 16
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
     print(f'Action space: {env.action_space}')
@@ -23,7 +23,7 @@ if __name__=="__main__":
     checkpoint_callback = CheckpointCallback(
     save_freq=max(100000 // num_cpu, 1),
     save_path="./logs/",
-    name_prefix="philip4_tqc_deep_pick_and_place",
+    name_prefix="philip4_tqc_deep_reach",
     save_replay_buffer=True,
     save_vecnormalize=True,
     )
@@ -43,17 +43,17 @@ if __name__=="__main__":
                     n_quantiles=25)
                 )
     
-    tmp_path = "./tmp/"+datetime.now().strftime('tqc_dual_philip4_pickandplace_%H_%M_%d')
+    tmp_path = "./tmp/"+datetime.now().strftime('tqc_dual_philip4_reach_%H_%M_%d')
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     model.set_logger(new_logger)
     model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, progress_bar=True)
 
     # Loading model:
 
-    # model = TQC.load("logs/philip4_tqc_deep_pick_and_place_1710000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_tqc_deep_pick_and_place_replay_buffer_1710000_steps", truncate_last_traj=False)
+    # model = TQC.load("logs/philip4_tqc_deep_reach_1710000_steps", env = env)
+    # model.load_replay_buffer("logs/philip4_tqc_deep_reach_replay_buffer_1710000_steps", truncate_last_traj=False)
     # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"tqc_dual_philip4_pickandplace_11_01_11"
+    # tmp_path = "./tmp/"+"tqc_dual_philip4_reach_11_01_11"
     # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     # model.set_logger(new_logger)
     # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
