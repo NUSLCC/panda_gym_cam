@@ -138,7 +138,7 @@ class ReachCam(Task):
         self.target_current_y_position = self.target_start_y_position
         self.target_current_x_step = 0.0
         # self.target_motion_pattern = random.choice(["sin", "-sin", "line"])
-        self.target_motion_pattern = random.choice(["zig", "-zig", "line"])
+        self.target_motion_pattern = random.choice(["zig", "-zig"])
         self.target_motion_speed = random.choice([0.25, 0.5, 1.0, 2.0, 4.0])
         self.target_motion_amplitude = random.choice([0.1, 0.15, 0.2, 0.25, 0.3])
 
