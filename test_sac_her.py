@@ -25,7 +25,7 @@ if __name__=="__main__":
                 )
 
     # print(model.policy)
-    prefix = "sac_rgb_randzigbig_moving_nature_ee_kine"
+    prefix = "sac_rgb_randzigbig_moving_deformdual_ee_kine"
     tmp_path = "./tmp/"+datetime.now().strftime(prefix + "_%H_%M_%d")
     # set up logger
     new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
