@@ -50,10 +50,10 @@ if __name__=="__main__":
 
     # Loading model:
 
-    # model = TQC.load("logs/philip4_tqc_deep_push_obsonly_joints_100000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_tqc_deep_push_obsonly_joints_replay_buffer_100000_steps", truncate_last_traj=False)
+    # model = TQC.load("logs/philip4_tqc_deep_push_obsonly_joints_950000_steps", env = env)
+    # model.load_replay_buffer("logs/philip4_tqc_deep_push_obsonly_joints_replay_buffer_950000_steps", truncate_last_traj=False)
     # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"tqc_dual_philip4_push_joints_23_08_12"
+    # tmp_path = "./tmp/"+"tqc_dual_philip4_push_obsonly_joints_09_55_23"
     # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     # model.set_logger(new_logger)
     # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
