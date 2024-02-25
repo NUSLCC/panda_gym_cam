@@ -2,6 +2,9 @@ from panda_gym.envs import PandaReachCamEnv
 from stable_baselines3 import SAC, HerReplayBuffer
 import gymnasium as gym
 from panda_gym.utils import CustomCombinedExtractor
+import time
+
+start_time = time.time()
 
 env = gym.make('PandaReachCam-v3', render_mode="human", control_type="ee")
 # print(env.action_space)
@@ -44,8 +47,10 @@ while True:
     if (term_count + trun_count) == 100:
       break
 
+end_time = time.time()
 print("******************************************************************")
 print("Model name:", model_name)
+print("Running time:", end_time-start_time)
 print("success count:", success_count)
 print("failure count:", failure_count)
 print("terminate count:", term_count)
