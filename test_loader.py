@@ -13,9 +13,15 @@ env = gym.make('PandaReachCam-v3', render_mode="human", control_type="ee")
 
 # Remember to change the feature extractors in utils
 # model_name = "sac_rgb_randbig_moving_lstm_ee_model"
-model_name = "sac_rgb_randbig_moving_lstm_ee_kine_model"
+# model_name = "sac_rgb_randbig_moving_lstm_ee_kine_model"
+
+# model_name = "sac_rgb_randbig_moving_deformcnn_ee_model"
 # model_name = "sac_rgb_randbig_moving_deformcnn_ee_kine_model"
+
+model_name = "sac_rgb_randbig_moving_dualcnn_ee_model"
 # model_name = "sac_rgb_randbig_moving_dualcnn_ee_kine_model"
+
+# model_name = "sac_rgb_randbig_moving_naturecnn_ee_model"
 # model_name = "sac_rgb_randbig_moving_naturecnn_ee_kine_model"
 
 model = SAC.load(model_name, env=env)
