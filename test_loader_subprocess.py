@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 env = gym.make('PandaReachCamJoints-v3', render_mode="human", control_type="joints") # rgb_array
 print(env.action_space)
 # HER must be loaded with the env
-model = SAC.load("logs/Keep/Reach/philip4_tqc_deep_reach_obsonly_joints_21_16_24_750000_steps_works.zip", env=env)
+model = TQC.load("logs/philip4_tqc_deep_reach_obsonly_joints_21_16_24_750000_steps_works", env=env)
 
 obs, _ = env.reset()
 # print(obs['observation'])
@@ -23,7 +23,6 @@ for i in range(1000):
     # plt.imshow(obs["observation"])
     # plt.title('Subsequent resets')
     # plt.show()
-
 
     print(action)
     obs, reward, terminated, truncated, info = env.step(action)
