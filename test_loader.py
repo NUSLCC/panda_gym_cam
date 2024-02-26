@@ -24,7 +24,7 @@ for i in range(1000):
     # plt.title('Subsequent resets')
     # plt.show()
 
-    # print(action)
+    print(action)
     obs, reward, terminated, truncated, info = env.step(action)
     env.render()
     if terminated:
