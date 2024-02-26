@@ -13,4 +13,3 @@ models/
 events.out.tfevents.*
 *zip
 *.pth
-*.txt

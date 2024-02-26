@@ -1,0 +1,28 @@
+******************************************************************
+Model name:sac_rgb_randbig_moving_naturecnn_ee_model
+Running time:652.9314610958099s
+success count:20
+failure count:78
+terminate count:98
+truncated count:2
+******************************************************************
+Model name:sac_rgb_randbig_moving_dualcnn_ee_model
+Running time:652.7428877353668s
+success count:0
+failure count:100
+terminate count:100
+truncated count:0
+******************************************************************
+Model name:sac_rgb_randbig_moving_deformcnn_ee_model
+Running time:541.7386236190796s
+success count:0
+failure count:100
+terminate count:100
+truncated count:0
+******************************************************************
+Model name:sac_rgb_randbig_moving_lstm_ee_model
+Running time:256.299001455307s
+success count:97
+failure count:0
+terminate count:97
+truncated count:3

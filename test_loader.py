@@ -12,13 +12,13 @@ env = gym.make('PandaReachCam-v3', render_mode="human", control_type="ee")
 # HER must be loaded with the env
 
 # Remember to change the feature extractors in utils
-# model_name = "sac_rgb_randbig_moving_lstm_ee_model"
+model_name = "sac_rgb_randbig_moving_lstm_ee_model"
 # model_name = "sac_rgb_randbig_moving_lstm_ee_kine_model"
 
 # model_name = "sac_rgb_randbig_moving_deformcnn_ee_model"
 # model_name = "sac_rgb_randbig_moving_deformcnn_ee_kine_model"
 
-model_name = "sac_rgb_randbig_moving_dualcnn_ee_model"
+# model_name = "sac_rgb_randbig_moving_dualcnn_ee_model"
 # model_name = "sac_rgb_randbig_moving_dualcnn_ee_kine_model"
 
 # model_name = "sac_rgb_randbig_moving_naturecnn_ee_model"
@@ -63,3 +63,13 @@ print("failure count:", failure_count)
 print("terminate count:", term_count)
 print("truncated count:", trun_count)
 print("******************************************************************")
+
+# Open the file in append mode
+with open('test_loader_results.txt', 'a') as file:
+    file.write("******************************************************************\n")
+    file.write("Model name:" + model_name + "\n")
+    file.write("Running time:" + str(end_time-start_time) + "s\n")
+    file.write("success count:" + str(success_count) + "\n")
+    file.write("failure count:" + str(failure_count) + "\n")
+    file.write("terminate count:" + str(term_count) + "\n")
+    file.write("truncated count:" + str(trun_count) + "\n")
