@@ -4,6 +4,8 @@ from panda_gym.envs import PandaPickandPlaceCamEnv
 from panda_gym.envs import PandaLiftCamEnv
 from panda_gym.envs import PandaPushCamEnv
 from panda_gym.envs import PandaSlideCamEnv
+# import numpy as np
+# np.set_printoptions(threshold = np.inf)
 
 env = PandaSlideCamEnv(render_mode="human") # rgb_array
 
