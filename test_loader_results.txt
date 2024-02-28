@@ -26,3 +26,17 @@ success count:97
 failure count:0
 terminate count:97
 truncated count:3
+******************************************************************
+Model name:sac_rgb_randbig_moving_naturecnn_ee_kine_model
+Running time:551.2282993793488s
+success count:29
+failure count:64
+terminate count:93
+truncated count:7
+******************************************************************
+Model name:sac_rgb_randbig_moving_dualcnn_ee_kine_model
+Running time:342.0531587600708s
+success count:92
+failure count:0
+terminate count:92
+truncated count:8
