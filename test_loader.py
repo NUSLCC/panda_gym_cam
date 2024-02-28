@@ -8,9 +8,10 @@ import matplotlib.pyplot as plt
 env = gym.make('PandaReachCamJoints-v3', render_mode="human", control_type="joints") # rgb_array
 print(env.action_space)
 # HER must be loaded with the env
-model = SAC.load("logs/Keep/Reach/philip4_tqc_deep_reach_obsonly_joints_21_16_24_750000_steps_works.zip", env=env)
+model = TQC.load("logs/philip4_tqc_deep_reach_obsonly_joints_21_16_24_750000_steps_works.zip", env=env)
 
 obs, _ = env.reset()
+i_counter = 0
 # print(obs['observation'])
 
 # plt.imshow(obs["observation"])
@@ -29,9 +30,11 @@ for i in range(1000):
     env.render()
     if terminated:
       print("terminated")
-      print(i)
+      print("Episode Length:", i-i_counter)
       obs, info = env.reset()
+      i_counter = i
     elif truncated:
       print("truncated")
       print(info)
       obs, info = env.reset()
+      i_counter = i

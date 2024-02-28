@@ -16,7 +16,7 @@ obs, _ = env.reset()
 # plt.imshow(obs["observation"])
 # plt.title('First reset')
 # plt.show()
-
+i_counter = 0
 for i in range(1000):
     action, _states = model.predict(obs, deterministic=True)
 
@@ -28,4 +28,5 @@ for i in range(1000):
     obs, reward, terminated, truncated, info = env.step(action)
     env.render()
     if terminated or truncated:
-      break
+      print("Episode Length:", i-i_counter)
+      obs, info = env.reset()

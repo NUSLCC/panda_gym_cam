@@ -18,7 +18,8 @@ for i in range(len(text)):
     if "Wrapping the env in a DummyVecEnv" in text[i]:
         first_line_counter = i
  #   if "ActiveThreads" in text[i]:
-    if "argv[0]" in text[i]:
+  #  if "argv[0]" in text[i]:
+    if "Current joint" in text[i]:
         last_line_counter = i
         break
         
@@ -40,15 +41,29 @@ for i in range(len(action_arrays)):
         combined_part = first_part + second_part
         print(combined_part)
         final_result.append(combined_part)
-print(final_result)
+print("Result:", final_result)
 
+actual_joints = []
+for element in final_result:
+    # Convert string to list of floats
+    float_list = [float(num) for num in element.strip('[]').split(',')]
 
-for i in final_result:
-    # Construct the command to execute based on the current line
-    command = ["rostopic pub", f"-1 /joint_position_example_controller/command /std_msgs/Float64MultiArray 'data:{i}'"]
+    # Multiply each float by 0.05
+    multiplied_list = [num * 0.05 for num in float_list] # panda-gym multiplies joint action by 0.05 to limit change in pose
 
-    # Execute the command using subprocess.run
-    subprocess.run(command)
+    # Convert back to string
+    multiplied_string = '[' + ','.join(map(str, multiplied_list)) + ']'
 
-    # Add a delay of N seconds between each line
-    time.sleep(N)
+    # Append to result list
+    actual_joints.append(multiplied_string)
+
+print("Actual joint list:", actual_joints)
+# for i in final_result:
+#     # Construct the command to execute based on the current line
+#     command = ["rostopic pub", f"-1 /joint_position_example_controller/command /std_msgs/Float64MultiArray 'data:{i}'"]
+
+#     # Execute the command using subprocess.run
+#     subprocess.run(command)
+
+#     # Add a delay of N seconds between each line
+#     time.sleep(N)
