@@ -29,4 +29,5 @@ for i in range(1000):
     env.render()
     if terminated or truncated:
       print("Episode Length:", i-i_counter)
-      obs, info = env.reset()
+      break
+      # obs, info = env.reset()
