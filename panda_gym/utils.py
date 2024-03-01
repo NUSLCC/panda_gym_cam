@@ -258,6 +258,64 @@ class DeepConvNetCombinedExtractor(BaseFeaturesExtractor):
 
         return final_output
 
+class DeepConvNetCombinedExtractorObservationOnly(BaseFeaturesExtractor):
+    """
+    Applies two separate CNNs to both image observations, and then another convolutional network thereafter.
+    """
+    def __init__(
+        self,
+        observation_space: spaces.Dict,
+        features_dim: int = 512,
+    ) -> None:
+        super().__init__(observation_space, features_dim)
+
+        self.img_cnn = DualCNN(observation_space.spaces["observation"])
+        self.final_encoder = FinalEncoderObservationOnly()
+
+        total_concat_size = features_dim
+
+        # Update the features dim manually
+        self._features_dim = total_concat_size
+
+    def forward(self, observations: TensorDict) -> torch.Tensor:
+
+        img_output = self.img_cnn(observations["observation"])
+        # print("img_output", img_output.shape)
+        # print("state_output", state_output.shape)
+        # print("combined_output", combined_output.shape)
+        final_output = self.final_encoder(img_output)
+
+        return final_output
+
+class FinalEncoderObservationOnly(nn.Module):
+    """
+    This is the final encoder, after: two separate CNNs applied to both image observation and are merged via broadcasted element-wise addition.
+	"""
+    def __init__(self):
+        super().__init__()
+        self.final_cnn = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            # nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(),
+            # nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(8832, 512), # 8832 is the output from flattening
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+        )
+    def forward(self, x):
+        x = self.final_cnn(x)
+        return x
+    
 class CustomConvNext(BaseFeaturesExtractor):
     """
     :param observation_space: (gym.Space)
