@@ -158,6 +158,8 @@ class ReachCam(Task):
         depth_img = np.array(depth_img).reshape((cam_height, cam_width))
         depth_img = farVal * nearVal / (farVal - (farVal - nearVal) * depth_img)
         depth_img = depth_img[..., np.newaxis]
+        
+        return rgb_img, depth_img
 
 
     def get_achieved_goal(self) -> np.ndarray:
