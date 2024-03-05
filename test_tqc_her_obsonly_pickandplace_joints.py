@@ -14,7 +14,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 
 if __name__=="__main__":
     # env = gym.make('PandaReachCam-v3', render_mode="human") #, control_type="joints") # rgb_array
-    env_id = "PandaPickandPlaceCamDenseJoints-v3"
+    env_id = "PandaPickandPlaceCamJointsDense-v3"
     num_cpu = 16
     env = make_vec_env(env_id, n_envs=num_cpu, seed=0, vec_env_cls=SubprocVecEnv)
     print(f'Action space: {env.action_space}')
