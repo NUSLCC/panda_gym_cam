@@ -7,8 +7,11 @@ from gymnasium import spaces
 
 from panda_gym.envs.core import PyBulletRobot
 from panda_gym.pybullet import PyBullet
+from panda_gym.utils import colorjitter
+import matplotlib.pyplot as plt
 
 from panda_gym.utils import color_threshold_pixel_counter
+import cv2
 
 class PandaCam(PyBulletRobot):
     """Panda robot in PyBullet with Realsense D405 camera.
@@ -111,12 +114,18 @@ class PandaCam(PyBulletRobot):
         return target_arm_angles
 
     def get_obs(self) -> np.ndarray:
-        return self.render_from_robot_cam()
+        rgb_img, _ = self.render_from_robot_cam()
+        jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        resized_image = cv2.resize(jittered_img, (160, 90), interpolation = cv2.INTER_AREA)
+        resized_image = resized_image.reshape(90, 160 , 3)
+        # plt.imshow(resized_image)
+        # plt.show()
+        return resized_image
 
     def render_from_robot_cam(
         self,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 1280,
+        cam_height: int = 720,
     ) -> Optional[np.ndarray]:
         """
         Camera fixed to the panda robot arm

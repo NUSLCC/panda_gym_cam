@@ -8,7 +8,7 @@
     </inertial>
     <visual>
       <geometry>
-        <box size="0.01 0.01 0.8"/>
+        <box size="0.01 0.01 0.5"/>
       </geometry>
     </visual>
   </link>
@@ -43,7 +43,7 @@
 <joint name="vertical_to_horizontal" type="fixed">
     <parent link="vertical_link"/>
     <child link="horizontal_link"/>
-    <origin xyz="-0.045 0 0.405"/>
+    <origin xyz="-0.045 0 0.4"/>
   </joint>
 
 <joint name="camera_joint" type="fixed">

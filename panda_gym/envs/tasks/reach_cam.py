@@ -14,6 +14,7 @@ from panda_gym.utils import colorjitter
 from panda_gym.utils import masked_auto_encoder
 from panda_gym.utils import velocity_calculator
 from panda_gym.utils import sine_velocity
+import cv2
 
 class ReachCam(Task):
     def __init__(
@@ -39,7 +40,7 @@ class ReachCam(Task):
         self.cam_height: int = 90
         self.cam_link = 13
         self.stationary_cam_link = 1
-        self.stationary_cam_pitch_angle = 40
+        self.stationary_cam_pitch_angle = 45
         with self.sim.no_rendering():
             self._create_scene()
 
@@ -47,10 +48,10 @@ class ReachCam(Task):
         self.sim.create_plane(z_offset=-0.4)
         self.sim.create_box(
             body_name="black_panda_table",
-            half_extents=np.array([0.32, 0.32, 0.398/2]),
+            half_extents=np.array([0.4, 1, 0.398/2]),
             mass=0.0,
             position=np.array([-0.68, 0, -0.398/2]),
-            rgba_color=np.array([0, 0, 0, 1]),
+            rgba_color=np.array([0.95, 0.95, 0.95, 1]),
         )
         self.sim.create_box(
             body_name="silver_table_block",
@@ -61,10 +62,10 @@ class ReachCam(Task):
         )
         self.sim.create_box(
             body_name="white_table",
-            half_extents=np.array([0.4, 0.64, 0.398/2]), 
+            half_extents=np.array([0.5, 0.8, 0.398/2]), 
             mass=0.0,
             position=np.array([0.04, 0, -0.398/2]),
-            rgba_color=np.array([1, 1, 1, 1]),
+            rgba_color=np.array([0.95, 0.95, 0.95, 1]),
         )
         self.sim.create_sphere(
             body_name="target",
@@ -116,7 +117,13 @@ class ReachCam(Task):
         # )
 
     def get_obs(self) -> np.ndarray:
-        # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        rgb_img, _ = self.render_from_stationary_cam()
+        jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        resized_image = cv2.resize(jittered_img, (160, 90), interpolation = cv2.INTER_AREA)
+        resized_image = resized_image.reshape(90, 160 , 3)
+        # plt.imshow(resized_image)
+        # plt.show()
+
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
         # target_position = self.sim.get_base_position("target")
@@ -124,14 +131,14 @@ class ReachCam(Task):
         # self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         # target_velocity = self.object_initial_velocity
         # self.sim.set_base_velocity("target", target_velocity)
-        return self.render_from_stationary_cam()
+        return resized_image
 
     def render_from_stationary_cam(
         self,
         # cam_width: int = 400,
         # cam_height: int = 224,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 1280,
+        cam_height: int = 720,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
@@ -170,9 +177,12 @@ class ReachCam(Task):
         self.hover_list = []
         self.robot_cam_initial_x, self.robot_cam_initial_y, self.robot_cam_initial_z = self.sim.get_link_position("panda_camera", self.cam_link)
         self.goal_range_low, self.goal_range_high = generate_semicircle_object_range()
-       # self.goal = self._sample_goal()
-        self.goal = np.array([0, 0, self.object_size / 2]) # fixed goal for testing
+        self.goal = self._sample_goal()
+       # self.goal = np.array([0, 0.05, self.object_size / 2]) # fixed goal for testing
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
+        print("cam",self.sim.get_link_position("panda_camera", self.cam_link))
+        print("ee",self.get_ee_position())
+        
        # self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
       #  self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
 
