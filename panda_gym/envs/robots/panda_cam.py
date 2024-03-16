@@ -124,8 +124,8 @@ class PandaCam(PyBulletRobot):
 
     def render_from_robot_cam(
         self,
-        cam_width: int = 1280,
-        cam_height: int = 720,
+        cam_width: int = 480,
+        cam_height: int = 270,
     ) -> Optional[np.ndarray]:
         """
         Camera fixed to the panda robot arm

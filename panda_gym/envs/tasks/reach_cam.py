@@ -137,8 +137,8 @@ class ReachCam(Task):
         self,
         # cam_width: int = 400,
         # cam_height: int = 224,
-        cam_width: int = 1280,
-        cam_height: int = 720,
+        cam_width: int = 480,
+        cam_height: int = 270,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm
@@ -180,8 +180,8 @@ class ReachCam(Task):
         self.goal = self._sample_goal()
        # self.goal = np.array([0, 0.05, self.object_size / 2]) # fixed goal for testing
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
-        print("cam",self.sim.get_link_position("panda_camera", self.cam_link))
-        print("ee",self.get_ee_position())
+        # print("cam",self.sim.get_link_position("panda_camera", self.cam_link))
+        # print("ee",self.get_ee_position())
         
        # self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
       #  self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
