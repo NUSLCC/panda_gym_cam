@@ -668,10 +668,10 @@ def generate_semicircle_object_range():
 
     radius = 0.64
     base_x = -0.68 # x coord of base of panda robot
-    x_min = -0.36
-    x_max = -0.04  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
-    y_min = -0.64
-    y_max = 0.64
+    x_min = -0.26
+    x_max = 0  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
+    y_min = -0.34
+    y_max = 0.34
     sampled_x = np.random.uniform(x_min, x_max)
     x_distance_from_base = sampled_x - base_x
     sampled_y = math.sqrt(radius ** 2 - sampled_x ** 2) # need to adjust y according to equation of a circle
