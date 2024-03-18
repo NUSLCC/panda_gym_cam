@@ -64,15 +64,15 @@ class ReachCam(Task):
             half_extents=np.array([0.4, 0.64, 0.398/2]), 
             mass=0.0,
             position=np.array([0.04, 0, -0.398/2]),
-            rgba_color=np.array([1, 1, 1, 1]),
+            rgba_color=np.array([0.3, 0.3, 0.3, 1]),
         )
-        self.sim.create_sphere(
+        self.sim.create_box(
             body_name="target",
-            radius=self.object_size/2,
+            half_extents=np.array([0.03, 0.03, 0.03]),
             mass=0.0,
             ghost=True,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.1, 0.9, 0.1, 1]),
+            rgba_color=np.array([0.5, 0.9, 0.5, 1]),
         )
         self.sim.loadURDF( 
             body_name="stationary_camera",
