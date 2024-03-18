@@ -460,8 +460,8 @@ class RobotCamTaskEnv(gym.Env):
             with_depth: bool = False,
             data_type: type = np.float32,
             ) -> Dict[str, np.ndarray]:
-        robot_rgb = self.robot.get_obs()
-        task_rgb = self.task.get_obs()
+        robot_rgb, robot_dep = self.robot.get_obs()
+        task_rgb, task_dep = self.task.get_obs()
 
         # if normalize_image:
         #     robot_rgb = robot_rgb.astype(data_type) / 255.0 # [H, W, C]

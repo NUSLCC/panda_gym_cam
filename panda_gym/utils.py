@@ -670,8 +670,8 @@ def generate_semicircle_object_range():
     base_x = -0.68 # x coord of base of panda robot
     x_min = -0.36
     x_max = -0.04  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
-    y_min = -0.5
-    y_max = 0.5
+    y_min = -0.64
+    y_max = 0.64
     sampled_x = np.random.uniform(x_min, x_max)
     x_distance_from_base = sampled_x - base_x
     sampled_y = math.sqrt(radius ** 2 - sampled_x ** 2) # need to adjust y according to equation of a circle
@@ -731,17 +731,17 @@ def colorjitter(img, brightness, contrast, saturation, hue):
         RGB image (np.ndarray) that has brightness, contrast, saturation and hue jittered. Shape of W, H, C.
     """
     org_img = np.array(img).astype(np.uint8)
-    img = np.array(img).astype(np.uint8)
+    img = np.array(img).astype(np.uint8).transpose(1, 0, 2)
     pil_img = Image.fromarray(img)
     color_jitter = transforms.ColorJitter(brightness = brightness, contrast=contrast, saturation=saturation, hue=hue)
     pil_img = color_jitter(pil_img)
-    jittered_img = np.asarray(pil_img).astype(np.uint8)
-    # fig, axes = plt.subplots(1, 2)
-    # axes[0].imshow(org_img.reshape(224, 400, 3))
-    # axes[0].set_title('Original image')
-    # axes[1].imshow(jittered_img.reshape(224, 400, 3))
-    # axes[1].set_title('Jittered image')
-    # plt.show()
+    jittered_img = np.asarray(pil_img).astype(np.uint8).transpose(1, 0, 2)
+    fig, axes = plt.subplots(1, 2)
+    axes[0].imshow(org_img.reshape(224, 400, 3))
+    axes[0].set_title('Original image')
+    axes[1].imshow(jittered_img.reshape(224, 400, 3))
+    axes[1].set_title('Jittered image')
+    plt.show()
     return jittered_img
 
 def masked_auto_encoder(img):
