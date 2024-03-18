@@ -115,15 +115,17 @@ class PandaCam(PyBulletRobot):
 
     def get_obs(self) -> np.ndarray:
         rgb_img, _ = self.render_from_robot_cam()
-        jittered_img = colorjitter(rgb_img, brightness = 0.1, contrast = 0.1, saturation = 0.1, hue = 0.1)
-        # plt.imshow(jittered_img)
+        jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        resized_image = cv2.resize(jittered_img, (160, 90), interpolation = cv2.INTER_AREA)
+        resized_image = resized_image.reshape(90, 160 , 3)
+        # plt.imshow(resized_image)
         # plt.show()
-        return jittered_img
+        return resized_image
 
     def render_from_robot_cam(
         self,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 480,
+        cam_height: int = 270,
     ) -> Optional[np.ndarray]:
         """
         Camera fixed to the panda robot arm

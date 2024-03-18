@@ -67,13 +67,13 @@ class ReachCam(Task):
             position=np.array([0.04, 0, -0.398/2]),
             rgba_color=np.array([0.95, 0.95, 0.95, 1]),
         )
-        self.sim.create_box(
+        self.sim.create_sphere(
             body_name="target",
-            half_extents=np.array([0.03,0.03,0.03]),
+            radius=self.object_size/2,
             mass=0.0,
             ghost=True,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.4, 0.9, 0.4, 1]),
+            rgba_color=np.array([0.1, 0.9, 0.1, 1]),
         )
         self.sim.loadURDF( 
             body_name="stationary_camera",
@@ -118,8 +118,10 @@ class ReachCam(Task):
 
     def get_obs(self) -> np.ndarray:
         rgb_img, _ = self.render_from_stationary_cam()
-        jittered_img = colorjitter(rgb_img, brightness = 0.1, contrast = 0.1, saturation = 0.1, hue = 0.1)
-        # plt.imshow(jittered_img)
+        jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
+        resized_image = cv2.resize(jittered_img, (160, 90), interpolation = cv2.INTER_AREA)
+        resized_image = resized_image.reshape(90, 160 , 3)
+        # plt.imshow(resized_image)
         # plt.show()
 
         # mae_img = masked_auto_encoder(jittered_img)
@@ -129,14 +131,14 @@ class ReachCam(Task):
         # self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         # target_velocity = self.object_initial_velocity
         # self.sim.set_base_velocity("target", target_velocity)
-        return jittered_img
+        return resized_image
 
     def render_from_stationary_cam(
         self,
         # cam_width: int = 400,
         # cam_height: int = 224,
-        cam_width: int = 160,
-        cam_height: int = 90,
+        cam_width: int = 480,
+        cam_height: int = 270,
     ) -> Optional[np.ndarray]:
         """
         Stationary camera that is directly in front of the robot arm

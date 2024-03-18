@@ -31,7 +31,7 @@ if __name__=="__main__":
     # Training from scratch:
     model = TQC(policy="MultiInputPolicy",env=env, batch_size=256, gamma=0.95, learning_rate=1e-4, verbose=1, 
                 train_freq=64, gradient_steps=64, tau=0.05, tensorboard_log="./tmp", learning_starts=1500,
-                buffer_size=20000, replay_buffer_class=HerReplayBuffer, device="cuda:0",
+                buffer_size=20000, replay_buffer_class=None, device="cuda:0",
                 # Parameters for HER
               #  replay_buffer_kwargs=dict(n_sampled_goal=4, goal_selection_strategy="future"),
                 # Parameters for TQC
@@ -50,10 +50,10 @@ if __name__=="__main__":
 
     # Loading model:
 
-    # model = TQC.load("logs/philip4_tqc_deep_reach_obsonly_joints_19_43_17_800000_steps", env = env)
-    # model.load_replay_buffer("logs/philip4_tqc_deep_reach_obsonly_joints_19_43_17_replay_buffer_800000_steps", truncate_last_traj=False)
+    # model = TQC.load("logs/philip4_tqc_deep_reach_obsonly_joints_850000_steps", env = env)
+    # model.load_replay_buffer("logs/philip4_tqc_deep_reach_obsonly_joints_replay_buffer_850000_steps", truncate_last_traj=False)
     # print(f'Replay buffer size is {model.replay_buffer.size()}')
-    # tmp_path = "./tmp/"+"tqc_dual_philip4_reach_obsonly_joints_19_43_17"
+    # tmp_path = "./tmp/"+"tqc_dual_philip4_reach_joints_09_50_21"
     # new_logger = configure(tmp_path, ["stdout", "csv", "tensorboard"])
     # model.set_logger(new_logger)
     # model.learn(total_timesteps=2_500_000, callback=checkpoint_callback, reset_num_timesteps=False, progress_bar=True)
