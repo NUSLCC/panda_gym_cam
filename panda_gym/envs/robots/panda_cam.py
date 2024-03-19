@@ -127,6 +127,24 @@ class PandaCam(PyBulletRobot):
         rot_matrix = np.array(self.sim.physics_client.getMatrixFromQuaternion(cam_orn)).reshape(3,3) # 3x3 rotation matrix (right, forward, up by columns)
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))
+
+        # Define standard deviation for noise
+        std_dev_pose = 0.01 # for cam pose
+        std_dev = 0.02  # for the look and up vectors
+        # Generate random noise for camera position, look and up vectors
+        noise_look = np.random.uniform(-std_dev, std_dev, size=(3,))
+        noise_up = np.random.uniform(-std_dev, std_dev, size=(3,))
+        noise_cam_pos = np.random.uniform(-std_dev_pose, std_dev_pose, size=(3,))
+        # Apply noise to camera position, look, and up vectors
+        cam_pos += noise_cam_pos
+        forward_vec += noise_look
+      #  print(forward_vec)
+        up_vec += noise_up
+      #  print(up_vec)
+        # Normalize the look and up vectors
+        forward_vec /= np.linalg.norm(forward_vec)
+        up_vec /= np.linalg.norm(up_vec)
+
         target_position = cam_pos + 0.1 * forward_vec
         view_matrix = self.sim.physics_client.computeViewMatrix(cam_pos, target_position, up_vec)
         aspect_ratio = cam_width / cam_height

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from panda_gym.pybullet import PyBullet
 from panda_gym.utils import distance
+from panda_gym.utils import colorjitter
 
 class PyBulletRobot(ABC):
     """Base class for robot env.
@@ -477,9 +478,11 @@ class RobotCamTaskEnv(gym.Env):
         # else:
         #     robot_obs = robot_rgbx
         #     task_obs = task_rgb
-
+        robot_rgb = colorjitter(robot_rgb, brightness = 0.4, contrast = 0.4, saturation = 0.4, hue = 0.2)
+        task_rgb = colorjitter(task_rgb, brightness = 0.4, contrast = 0.4, saturation = 0.4, hue = 0.2)
         robot_rgb = robot_rgb.astype(np.uint8)
         task_rgb = task_rgb.astype(np.uint8)
+
         observation = np.concatenate((robot_rgb, task_rgb), axis=-1) # concat along channel dim
         observation = np.transpose(observation, (2, 0, 1)) 
 
