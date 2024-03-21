@@ -144,32 +144,32 @@ class ReachCam(Task):
         forward_vec = rot_matrix.dot(np.array((0, 0, -1)))
         up_vec = rot_matrix.dot(np.array((0, 1, 0)))
 
-        # Define standard deviation for noise
-        std_dev = 0.02 # for cam pose
-        std_dev_first = 0.08  # for the first component
-        std_dev_second = 0.01  # for the second component
-        std_dev_third = 0.08  # for the third component
-        # Generate random noise for each component with different standard deviations
-        noise_first_look = np.random.uniform(-std_dev_first, std_dev_first)
-        noise_second_look = np.random.uniform(-std_dev_second, std_dev_second)
-        noise_third_look = np.random.uniform(-std_dev_third, std_dev_third)
-        noise_first_up = np.random.uniform(-std_dev_first, std_dev_first)
-        noise_second_up = np.random.uniform(-std_dev_second, std_dev_second)
-        noise_third_up = np.random.uniform(-std_dev_third, std_dev_third)
-        # Combine the noise components into a noise vector for look and up vectors
-        noise_look = np.array([noise_first_look, noise_second_look, noise_third_look])
-        noise_up = np.array([noise_first_up, noise_second_up, noise_third_up])
-        # Generate random noise for camera position
-        noise_cam_pos = np.random.uniform(-std_dev, std_dev, size=(3,))
-        # Apply noise to camera position, look, and up vectors
-        cam_pos += noise_cam_pos
-        forward_vec += noise_look
-       # print(forward_vec)
-        up_vec += noise_up
-      #  print(up_vec)
-        # Normalize the look and up vectors
-        forward_vec /= np.linalg.norm(forward_vec)
-        up_vec /= np.linalg.norm(up_vec)
+    #     # Define standard deviation for noise
+    #     std_dev = 0.02 # for cam pose
+    #     std_dev_first = 0.08  # for the first component
+    #     std_dev_second = 0.01  # for the second component
+    #     std_dev_third = 0.08  # for the third component
+    #     # Generate random noise for each component with different standard deviations
+    #     noise_first_look = np.random.uniform(-std_dev_first, std_dev_first)
+    #     noise_second_look = np.random.uniform(-std_dev_second, std_dev_second)
+    #     noise_third_look = np.random.uniform(-std_dev_third, std_dev_third)
+    #     noise_first_up = np.random.uniform(-std_dev_first, std_dev_first)
+    #     noise_second_up = np.random.uniform(-std_dev_second, std_dev_second)
+    #     noise_third_up = np.random.uniform(-std_dev_third, std_dev_third)
+    #     # Combine the noise components into a noise vector for look and up vectors
+    #     noise_look = np.array([noise_first_look, noise_second_look, noise_third_look])
+    #     noise_up = np.array([noise_first_up, noise_second_up, noise_third_up])
+    #     # Generate random noise for camera position
+    #     noise_cam_pos = np.random.uniform(-std_dev, std_dev, size=(3,))
+    #     # Apply noise to camera position, look, and up vectors
+    #     cam_pos += noise_cam_pos
+    #     forward_vec += noise_look
+    #    # print(forward_vec)
+    #     up_vec += noise_up
+    #   #  print(up_vec)
+    #     # Normalize the look and up vectors
+    #     forward_vec /= np.linalg.norm(forward_vec)
+    #     up_vec /= np.linalg.norm(up_vec)
 
         target_position = cam_pos + 0.1 * forward_vec
         view_matrix = self.sim.physics_client.computeViewMatrix(cam_pos, target_position, up_vec)
