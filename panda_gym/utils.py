@@ -666,9 +666,9 @@ def generate_semicircle_object_range():
         obj_range_high (np.ndarray): coordinates of the maximum of obj range
     """
 
-    radius = 0.5
+    radius = 0.64
     base_x = -0.68 # x coord of base of panda robot
-    x_min = -0.2
+    x_min = -0.26
     x_max = 0  # The base is 0.24 m to the white table. So x max = -0.04 is the maximum it can go while being 80% of the actual reach. 
     y_min = -0.34
     y_max = 0.34

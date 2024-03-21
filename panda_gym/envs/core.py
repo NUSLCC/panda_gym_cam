@@ -478,8 +478,8 @@ class RobotCamTaskEnv(gym.Env):
         # else:
         #     robot_obs = robot_rgbx
         #     task_obs = task_rgb
-        # robot_rgb = colorjitter(robot_rgb, brightness = 0.6, contrast = 0.6, saturation = 0.6, hue = 0.3)
-        # task_rgb = colorjitter(task_rgb, brightness = 0.6, contrast = 0.6, saturation = 0.6, hue = 0.3)
+        robot_rgb = colorjitter(robot_rgb, brightness = 0.4, contrast = 0.4, saturation = 0.4, hue = 0.2)
+        task_rgb = colorjitter(task_rgb, brightness = 0.4, contrast = 0.4, saturation = 0.4, hue = 0.2)
         robot_rgb = robot_rgb.astype(np.uint8)
         task_rgb = task_rgb.astype(np.uint8)
 
