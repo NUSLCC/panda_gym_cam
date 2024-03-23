@@ -26,12 +26,12 @@ class PushCam(Task):
         self.distance_threshold = distance_threshold
         self.object_size = 0.04
         self.far_distance_threshold = 0.8
-        self.object_size = 0.04
+        self.object_size = 0.06
         self.get_ee_position = get_ee_position
-        self.goal_range_low = [0.1, -0.15, 0]
-        self.goal_range_high = [0.15, 0.15, 0]
+        self.goal_range_low = [0.12, -0.3, 0]
+        self.goal_range_high = [0.15, 0.3, 0]
         self.obj_range_low = [0, -0.15, 0]
-        self.obj_range_high = [0.05, 0.15, 0]
+        self.obj_range_high = [0.03, 0.15, 0]
         self.cam_width: int = 160
         self.cam_height: int = 90
         self.cam_link = 13
@@ -62,22 +62,22 @@ class PushCam(Task):
             half_extents=np.array([0.4, 0.64, 0.398/2]), 
             mass=0.0,
             position=np.array([0.04, 0, -0.398/2]),
-            rgba_color=np.array([1, 1, 1, 1]),
+            rgba_color=np.array([0.3, 0.3, 0.3, 1]),
         )
         self.sim.create_box(
             body_name="object",
-            half_extents=np.ones(3) * self.object_size / 2,
+            half_extents=np.array([0.03, 0.03, 0.03]),
             mass=1.0,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.0, 1.0, 0.0, 1.0]),
+            rgba_color=np.array([0.2, 0.9, 0.2, 1]),
         )
         self.sim.create_box(
             body_name="target",
-            half_extents=np.ones(3) * self.object_size / 2,
+            half_extents=np.array([0.03, 0.03, 0.03]),
             mass=0.0,
             ghost=True,
             position=np.array([0.0, 0.0, self.object_size / 2]),
-            rgba_color=np.array([0.0, 0.0, 1.0, 1.0]),
+            rgba_color=np.array([1, 1, 0, 1]),
         )
         self.sim.loadURDF( 
             body_name="stationary_camera",
