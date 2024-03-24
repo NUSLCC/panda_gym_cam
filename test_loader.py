@@ -5,10 +5,10 @@ import time
 import gymnasium as gym
 import matplotlib.pyplot as plt
 
-env = gym.make('PandaReachCamJoints-v3', render_mode="human", control_type="joints") # rgb_array
+env = gym.make('PandaMovingReachCamJoints-v3', render_mode="human", control_type="joints") # rgb_array
 print(env.action_space)
 # HER must be loaded with the env
-model = SAC.load("logs/Keep/Reach/philip4_tqc_deep_reach_obsonly_joints_21_16_24_750000_steps_works.zip", env=env)
+model = TQC.load("philip4_tqc_deep_movingreach_joints.zip", env=env)
 
 obs, _ = env.reset()
 # print(obs['observation'])

@@ -877,8 +877,8 @@ def velocity_calculator(
 def sine_velocity(
     target_position: np.ndarray,
     initial_velocity: np.ndarray,
-    A: float = 3, # used to be 0.1
-    B: float = 80,
+    A: float = 0.4, # used to be 0.1
+    B: float = 40,
 ):
     """
     Creates sinusoidal velocity of the target: v in x direction = A sin(By). v in y direction is an initialised constant.

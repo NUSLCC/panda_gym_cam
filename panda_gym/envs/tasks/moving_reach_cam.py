@@ -66,6 +66,14 @@ class MovingReachCam(Task):
             position=np.array([0.04, 0, -0.398/2]),
             rgba_color=np.array([1, 1, 1, 1]),
         )
+        # self.sim.create_box(
+        #     body_name="target",
+        #     half_extents=np.array([self.object_size / 4, self.object_size / 4, self.object_size / 4]), 
+        #     mass=0.0,
+        #     ghost=True,
+        #     position=np.array([0.0, 0.0, self.object_size / 2]),
+        #     rgba_color=np.array([0.9, 0.1, 0.1, 1]),
+        # )
         self.sim.create_sphere(
             body_name="target",
             radius=self.object_size/2,
@@ -84,6 +92,7 @@ class MovingReachCam(Task):
 
     def get_obs(self) -> np.ndarray:
         target_position = self.sim.get_base_position("target")
+      #  self.object_initial_velocity = sine_velocity(target_position, np.array(self.object_initial_velocity))
         self.object_initial_velocity = velocity_calculator(target_position, np.array(self.object_initial_velocity))
         target_velocity = self.object_initial_velocity
         self.sim.set_base_velocity("target", target_velocity)
@@ -91,7 +100,6 @@ class MovingReachCam(Task):
         # jittered_img = colorjitter(rgb_img, brightness = 0.5, contrast = 0.5, saturation = 0.5, hue = 0.3)
         # mae_img = masked_auto_encoder(jittered_img)
         # return mae_img
-        # self.object_initial_velocity = sine_velocity(target_position, np.array(self.object_initial_velocity))
 
 
     def render_from_stationary_cam(
@@ -139,7 +147,7 @@ class MovingReachCam(Task):
         self.goal = self._sample_goal()
         self.sim.set_base_pose("target", self.goal, np.array([0.0, 0.0, 0.0, 1.0]))
         self.object_initial_velocity = np.random.uniform(np.array(self.object_velocity_max) / 2, self.object_velocity_max)
-      #  self.object_initial_velocity = np.array([0, 0.1, 0]) # for sin function 
+     #   self.object_initial_velocity = np.array([0, 0.3, 0]) # for sin function 
 
     def _sample_goal(self) -> np.ndarray:
         """Randomize goal."""
