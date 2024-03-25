@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 env = gym.make('PandaReachCamJoints-v3', render_mode="human", control_type="joints") # rgb_array
 print(env.action_space)
 # HER must be loaded with the env
-model = TQC.load("philip4_tqc_deep_reach_obsonly_joints", env=env)
+model = TQC.load("logs/philip4_tqc_deep_reach_obsonly_joints_16_22_20_800000_steps.zip", env=env)
 
 obs, _ = env.reset()
 i_counter = 0

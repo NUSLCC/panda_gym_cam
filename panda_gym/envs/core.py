@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from panda_gym.pybullet import PyBullet
 from panda_gym.utils import distance
+from panda_gym.utils import colorjitter
 
 class PyBulletRobot(ABC):
     """Base class for robot env.
@@ -477,9 +478,11 @@ class RobotCamTaskEnv(gym.Env):
         # else:
         #     robot_obs = robot_rgbx
         #     task_obs = task_rgb
-
+        # robot_rgb = colorjitter(robot_rgb, brightness = 0.6, contrast = 0.6, saturation = 0.6, hue = 0.3)
+        # task_rgb = colorjitter(task_rgb, brightness = 0.6, contrast = 0.6, saturation = 0.6, hue = 0.3)
         robot_rgb = robot_rgb.astype(np.uint8)
         task_rgb = task_rgb.astype(np.uint8)
+
         observation = np.concatenate((robot_rgb, task_rgb), axis=-1) # concat along channel dim
         observation = np.transpose(observation, (2, 0, 1)) 
 
@@ -561,8 +564,8 @@ class RobotCamTaskEnv(gym.Env):
         truncated = False
         info = {"is_terminated": terminated, "is_success": success, "is_failure": failure, "object_target_distance": distance_d}
         reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal().astype(np.float32), info))
-        if terminated is True:
-            print("Current joint angles:", self.robot.get_arm_joint_angles().astype(np.float32))
+        # if terminated is True:
+        #     print("Current joint angles:", self.robot.get_arm_joint_angles().astype(np.float32))
         return observation, reward, terminated, truncated, info
 
     def close(self) -> None:
