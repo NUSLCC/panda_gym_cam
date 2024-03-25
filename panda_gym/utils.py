@@ -5,7 +5,6 @@ from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
