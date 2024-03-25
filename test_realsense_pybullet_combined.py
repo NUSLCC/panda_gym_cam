@@ -73,16 +73,15 @@ def capture_and_save_images():
     cv2.imwrite(file_path, color_image_2)
 # print(f"Saved image: {file_path}")
 
-# cv2.imshow('Final image', static_image)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-
     # Process images
     static_image = color_image_2[150:580, 300:900, :]
 
     resized_active_image = cv2.resize(color_image_1, (160, 90))
     resized_static_image = cv2.resize(static_image, (160, 90))
+
+    # cv2.imshow('Final image', static_image)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     
     # cv2.imshow('Final image', resized_static_image)
     # cv2.waitKey(0)
@@ -100,54 +99,75 @@ def generate_roslaunch_command(current_joints_array):
     return command
 
 def main():
-    first_iteration = True
-    while True:
-        # Capture and save images
-        final_image = capture_and_save_images()
+    try:
+        first_iteration = True
+        previous_commands = []
+        while True:
+            # Capture and save images
+            final_image = capture_and_save_images()
 
-        # Generate observation
-        observation = {
-            "observation": final_image.astype(np.uint8),
-            "desired_goal": np.random.uniform(-10, 10, (3,)).astype(np.float32),
-            "achieved_goal": np.random.uniform(-10, 10, (3,)).astype(np.float32),
-            "state": np.random.uniform(-10, 10, (10,)).astype(np.float32)
-        }
+            # Generate observation
+            observation = {
+                "observation": final_image.astype(np.uint8),
+                "desired_goal": np.random.uniform(-10, 10, (3,)).astype(np.float32),
+                "achieved_goal": np.random.uniform(-10, 10, (3,)).astype(np.float32),
+                "state": np.random.uniform(-10, 10, (10,)).astype(np.float32)
+            }
 
-        # Load environment and model
-        if first_iteration:
-            env = gym.make('PandaReachCamJoints-v3', render_mode='rgb_array', control_type="joints")
-            model = TQC.load("reach_blacktable_jitter", env=env)
+            # Load environment and model
+            if first_iteration:
+                env = gym.make('PandaPushCamJoints-v3', render_mode='rgb_array', control_type="joints")
+                model = TQC.load("push_blacktable", env=env)
+             #   model = TQC.load("reach_blacktable", env=env)
+              #  model = TQC.load("reach_blacktable_further", env=env)
 
-        # Predict action
-        action, _ = model.predict(observation, deterministic=True)
+            # Predict action
+            action, _ = model.predict(observation, deterministic=True)
 
-        action_array = []
+            action_array = []
 
-        for i in action:
-            action_array.append(i)
+            for i in action:
+                action_array.append(i)
 
-        # Update current joints
-        multiplied_array = np.array(action_array) * 0.05
-        if first_iteration:
-            first_iteration = False
-            current_joints = np.array([0, 0.41, 0, -1.85, 0, 2.26, 0.79])
-        current_joints += multiplied_array
+            # Update current joints
+            multiplied_array = np.array(action_array) * 0.05
+            if first_iteration:
+                first_iteration = False
+                current_joints = np.array([0, 0.11, 0, -1.85, 0, 1.96, 0.79])
+            current_joints += multiplied_array
 
-        current_joints_array = []
-        for i in current_joints:
-            current_joints_array.append(i)
+            current_joints_array = []
+            for i in current_joints:
+                current_joints_array.append(i)
 
-        # Generate and execute roslaunch command
-        command = generate_roslaunch_command(current_joints_array)
+            # Generate and execute roslaunch command
+            command = generate_roslaunch_command(current_joints_array)
+            previous_commands.append(command)
 
-        # env = os.environ.copy()
-        # env['PATH'] = '/opt/ros/noetic/bin:' + env['PATH'] 
-     #   subprocess.run(command, shell=True, cwd='/home/franka/catkin_ws')
+            # env = os.environ.copy()
+            # env['PATH'] = '/opt/ros/noetic/bin:' + env['PATH'] 
+            subprocess.run(command, shell=True, cwd='/home/franka/catkin_ws')
 
-        print(command[0])
+          #  print("Previous commands", previous_commands_list)
 
-        # Sleep for 5 seconds
-        time.sleep(12)
+            # Sleep for 5 seconds
+          #  time.sleep(1)
+    except:
+        transformed_commands = []
+        for cmd_list in previous_commands:
+            for cmd in cmd_list:
+                transformed_commands.append(cmd.replace("'", "").strip("[]"))
+
+        # Printing transformed commands
+        print("\n \n")
+        for cmd in transformed_commands:
+            print(cmd)
 
 if __name__ == "__main__":
     main()
+
+# success rate: 7/11
+
+#gripper: 
+# roslaunch franka_gripper franka_gripper.launch robot_ip:=172.16.0.2
+# rostopic pub /franka_gripper/move/goal franka_gripper/MoveActionGoal "{goal: {width: 0, speed: 0.05}}" -1
