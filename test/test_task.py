@@ -1,23 +1,26 @@
 import numpy as np
 import sys
 sys.path.append("/home/lcc/GitRepo/panda-gym")
+sys.path.append("/home/lcc/GitRepo/panda_gym_cam")
 sys.path.append("/Users/chenchen/GitRepo/panda_gym_cam")
 from panda_gym.pybullet import PyBullet
 from panda_gym.envs.tasks.reach import Reach
 from panda_gym.envs.tasks.reach_cam import ReachCam
+from panda_gym.envs.tasks.push_cam import PushCam
 from panda_gym.envs.robots.panda import Panda
 from panda_gym.envs.robots.panda_cam import PandaCam
 
 sim = PyBullet(render_mode="human")
-robot1 = PandaCam(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type="joints")
-task1= ReachCam(sim, get_ee_position=robot1.get_ee_position)
+robot1 = PandaCam(sim, block_gripper=True, base_position=np.array([-0.6, 0.0, 0.0]), control_type="ee")
+task1= PushCam(sim)
 
 task1.reset()
 print(task1.get_obs()[0].shape)
 print(task1.get_achieved_goal())
 print(task1.get_goal())
-# print(task1.is_success(task1.get_achieved_goal(), task1.get_goal()))
-# print(task1.compute_reward(task1.get_achieved_goal(), task1.get_goal(), {}))
+print("--------------------")
+print(task1.is_success(task1.get_achieved_goal(), task1.get_goal()))
+print(task1.compute_reward(task1.get_achieved_goal(), task1.get_goal(), {}))
 
 # print("--------------------")
 

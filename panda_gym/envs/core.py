@@ -206,9 +206,9 @@ class Task(ABC):
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: Dict[str, Any] = {}) -> np.ndarray:
         """Compute reward associated to the achieved and the desired goal."""
 
-    @abstractmethod
-    def set_target_position(self) -> None:
-         """Set the target to a new position."""
+    # @abstractmethod
+    # def set_target_position(self) -> None:
+    #      """Set the target to a new position."""
 
 
 class RobotTaskEnv(gym.Env):
@@ -545,7 +545,7 @@ class RobotCamTaskEnv(gym.Env):
 
     def step(self, action: np.ndarray) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, Any]]:
         self.robot.set_action(action)
-        self.task.set_target_position()
+        # self.task.set_target_position()
         self.sim.step()
         observation = self._get_obs(is_reset=False)
 

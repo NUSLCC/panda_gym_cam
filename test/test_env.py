@@ -2,13 +2,15 @@ import matplotlib.pyplot as plt
 import sys
 import gymnasium as gym
 sys.path.append("/home/lcc/GitRepo/panda-gym")
+sys.path.append("/home/lcc/GitRepo/panda_gym_cam")
 sys.path.append("/home/fyp/lcc_ws/panda_gym_cam")
 sys.path.append("/Users/chenchen/GitRepo/panda_gym_cam")
-from panda_gym.envs import PandaReachCamEnv
-from panda_gym.envs import PandaReachEnv
+# from panda_gym.envs import PandaReachCamEnv
+# from panda_gym.envs import PandaReachEnv
+from panda_gym.envs import PandaPushCamEnv
 
 # env = PandaReachCamEnv(render_mode="human") # rgb_array
-env= gym.make('PandaReachCam-v3', render_mode="human")
+env= gym.make('PandaPushCam-v3', render_mode="human")
 observation, info = env.reset()
 
 # print(observation["observation"].shape)
