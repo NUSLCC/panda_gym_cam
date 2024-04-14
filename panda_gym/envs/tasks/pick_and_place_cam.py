@@ -19,7 +19,7 @@ class PickAndPlaceCam(Task):
         sim: PyBullet,
         get_ee_position,
         reward_type: str = "dense",
-        distance_threshold: float = 0.05,
+        distance_threshold: float = 0.06,
     ) -> None:
         super().__init__(sim)
         self.reward_type = reward_type
