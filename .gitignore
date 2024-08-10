@@ -10,6 +10,8 @@ sandbox
 tmp/
 logs/
 models/
+output/
+tensorboard/
 events.out.tfevents.*
 *zip
 *.pth
