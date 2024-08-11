@@ -15,3 +15,4 @@ tensorboard/
 events.out.tfevents.*
 *zip
 *.pth
+conda*

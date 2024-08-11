@@ -406,9 +406,9 @@ class RobotCamTaskEnv(gym.Env):
         observation, info = self.reset(seed=0)  # required for init; seed can be changed later
         observation_shape = observation["observation"].shape
         observation_dtype = observation["observation"].dtype
-        achieved_goal_shape = observation["achieved_goal"].shape # Achieved goal is the current joint angles
+        achieved_goal_shape = observation["achieved_goal"].shape
         achieved_goal_dtype = observation["achieved_goal"].dtype
-        desired_goal_shape = observation["desired_goal"].shape # Desired goal is the joint angles required to reach target
+        desired_goal_shape = observation["desired_goal"].shape
         desired_goal_dtype = observation["desired_goal"].dtype
         kinematics_shape = observation["kinematics"].shape
         kinematics_dtype = observation["kinematics"].dtype
@@ -556,6 +556,7 @@ class RobotCamTaskEnv(gym.Env):
         truncated = False
         info = {"is_terminated": terminated, "is_success": success, "is_failure": failure}
         reward = float(self.task.compute_reward(self.task.get_achieved_goal().astype(np.float32), self.task.get_goal(), info))
+        
         return observation, reward, terminated, truncated, info
 
     def close(self) -> None:
